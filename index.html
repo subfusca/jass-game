@@ -4,576 +4,485 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>JASS – Dental Card Game</title>
-	<meta name="description" content="Turn-based card game per provided JASS rules" />
+	<meta name="description" content="Turn-based dental card game (2‑player hot‑seat)" />
 	<style>
 		:root{
-			--bg:#0f172a;--panel:#0b1220;--panel2:#162033;--text:#e2e8f0;--muted:#94a3b8;
-			--primary:#22c55e;--danger:#ef4444;--accent:#60a5fa;--border:#22304a;
-			--yellow:#fbbf24;--pink:#f472b6
+			--bg:#0f172a;--panel:#0b1220;--panel2:#0f1a2f;--ink:#e2e8f0;--muted:#94a3b8;
+			--green:#22c55e;--blue:#60a5fa;--rose:#fb7185;--amber:#fbbf24;--violet:#a78bfa;
+			--cyan:#22d3ee;--border:#1f2a44;--shadow:#0008
 		}
 		*{box-sizing:border-box}
-		html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
-			font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica Neue,Arial}
-		.app{min-height:100%;display:flex;flex-direction:column;gap:12px;padding:12px}
-		h1{font-size:20px;margin:0 0 4px 0}
-		.topbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-		.badge{padding:4px 8px;border-radius:999px;background:#1e293b;font-weight:700;color:var(--muted)}
-		.board{display:grid;grid-template-columns:1fr;gap:12px}
-		@media(min-width:920px){.board{grid-template-columns:320px 1fr 320px}}
-		.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
-		.panel h2{margin:0 0 8px 0;font-size:16px;color:var(--muted)}
-		.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-		.cards{display:flex;flex-wrap:wrap;gap:8px}
-		.card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px;min-width:160px;max-width:240px}
-		.card h3{margin:0 0 6px 0;font-size:14px}
-		.card p{margin:4px 0;font-size:12px;color:var(--muted)}
-		.tag{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;margin-right:4px;border:1px solid #31405e}
-		.btn{cursor:pointer;border:none;border-radius:999px;padding:8px 12px;font-weight:800}
-		.btn.primary{background:var(--primary);color:#052e16}
-		.btn.accent{background:var(--accent);color:#051a32}
+		html,body{height:100%;margin:0;background:radial-gradient(1200px 600px at 70% -10%,#13203a 0%,#0f172a 40%,#0b1220 100%);color:var(--ink);font-family:Inter, ui-sans-serif, system-ui, Segoe UI, Roboto}
+		.app{min-height:100%;display:flex;flex-direction:column;gap:12px;padding:14px}
+		.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+		h1{margin:0;font-size:20px;letter-spacing:.3px}
+		.turnGuide{flex:1;display:flex;gap:8px;align-items:center;min-width:260px}
+		.turnPill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#0c162a;color:var(--muted);font-weight:700}
+		.turnPill.active{background:linear-gradient(180deg,#15335e,#0d2343);color:#e5edf7;border-color:#264169;box-shadow:0 6px 16px var(--shadow)}
+		.btn{border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+		.btn.primary{background:var(--green);color:#052e16}
 		.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
-		.btn.danger{background:var(--danger);color:#3c0a0a}
-		.btn.small{padding:6px 10px;font-size:12px}
-		.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-		.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13px;color:var(--muted)}
-		.hr{height:1px;background:var(--border);margin:8px 0}
-		.goalItem{font-size:13px;margin:4px 0;padding:6px 8px;border-radius:8px;background:#142038;border:1px solid var(--border)}
-		.goalItem.done{opacity:.6;text-decoration:line-through}
-		.toast{position:fixed;bottom:12px;left:12px;right:12px;display:flex;justify-content:center;pointer-events:none}
-		.toast>div{pointer-events:auto;background:#111827;color:#e5e7eb;border:1px solid #374151;padding:10px 14px;border-radius:10px}
-		.footer{margin-top:auto;text-align:center;color:#7a869d;font-size:12px}
-		code{background:#0d1425;border:1px solid #1d2a44;border-radius:6px;padding:1px 6px}
+		.btn.warn{background:var(--amber);color:#3b2600}
+		.badge{padding:6px 10px;border-radius:999px;background:#101a2d;border:1px solid var(--border);color:var(--muted);font-weight:700}
+		.layout{display:grid;gap:12px}
+		@media(min-width:1100px){.layout{grid-template-columns:320px 1fr 360px}}
+		.panel{background:linear-gradient(180deg,#0e182b,#0a1324);border:1px solid var(--border);border-radius:14px;padding:12px;box-shadow:0 6px 20px #0003}
+		.panel h2{margin:0 0 8px 0;color:#c9d6ea;font-size:15px}
+		.scroll{max-height:420px;overflow:auto;padding-right:4px}
+		// Cards
+		.card{position:relative;isolation:isolate;background:linear-gradient(180deg,#0e1b33,#0b1528);border:1px solid #223355;border-radius:14px;padding:10px;min-width:180px;max-width:240px;box-shadow:inset 0 0 0 1px #1a2742, 0 10px 18px #0006}
+		.card .title{display:flex;align-items:center;gap:8px;font-weight:900;margin-bottom:6px}
+		.card .title .gem{width:18px;height:18px;border-radius:4px;box-shadow:inset 0 0 0 1px #000a}
+		.gem.proc{background:linear-gradient(180deg,#3b82f6,#1d4ed8)}
+		.gem.pharma{background:linear-gradient(180deg,#22d3ee,#0ea5e9)}
+		.gem.easy{background:linear-gradient(180deg,#34d399,#10b981)}
+		.gem.hard{background:linear-gradient(180deg,#fb7185,#ef4444)}
+		.line{color:var(--muted);font-size:12px;margin:4px 0}
+		.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+		.tag{font-size:11px;border:1px solid #2a3a60;background:#0b162c;padding:2px 8px;border-radius:999px}
+		.card .actions{display:flex;gap:8px;margin-top:8px}
+		.grid{display:flex;flex-wrap:wrap;gap:10px}
+		.goal{display:grid;gap:8px}
+		.goalItem{display:flex;justify-content:space-between;align-items:center;background:#0d1a31;border:1px dashed #27406b;border-radius:12px;padding:8px 10px}
+		.goalItem.done{opacity:.55;text-decoration:line-through}
+		.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;color:#aebbd6;font-size:13px}
+		.divider{height:1px;background:#1a2742;margin:8px 0}
+		// Instruction card
+		.instruction{background:linear-gradient(180deg,#0e223f,#0b1931);border:1px solid #24406a;border-radius:14px;padding:12px}
+		.instruction h3{margin:0 0 6px 0;font-size:14px}
+		.step{display:flex;gap:10px;align-items:flex-start;margin:8px 0}
+		.step .num{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#102544;border:1px solid #27406b;color:#b6c6e2;font-weight:900}
+		.step .txt{font-size:13px;color:#c9d6ea}
+		.log{font-size:12px;color:#93a0bd}
+		.toast{position:fixed;bottom:14px;left:14px;right:14px;display:flex;justify-content:center;pointer-events:none}
+		.toast>div{pointer-events:auto;background:#0a1426;border:1px solid #223355;border-radius:12px;padding:10px 14px;box-shadow:0 10px 24px #0007}
 	</style>
 </head>
 <body>
-<div class="app" id="app">
-	<div class="topbar">
+<div class="app">
+	<div class="top">
 		<h1>JASS – Dental Card Game</h1>
-		<span class="badge" id="turnBadge">Player 1’s turn • Phase: Draw</span>
-		<button class="btn ghost small" id="nextPhaseBtn">Next Phase ▶</button>
-		<button class="btn ghost small" id="endTurnBtn">End Turn ↩</button>
-		<button class="btn small" id="newGameBtn">New Game</button>
+		<div class="turnGuide">
+			<div id="pillDraw"   class="turnPill">1) Draw</div>
+			<div id="pillAction" class="turnPill">2) Procedure</div>
+			<div id="pillMod"    class="turnPill">3) Modifiers</div>
+		 </div>
+		<button id="nextBtn" class="btn primary">Next ▶</button>
+		<button id="endBtn"  class="btn ghost">End Turn ↩</button>
+		<span id="who" class="badge">P1’s turn</span>
 	</div>
 
-	<div class="board">
-		<!-- Left: Active Patient -->
+	<div class="layout">
 		<section class="panel">
 			<h2>Active Patient</h2>
-			<div id="patientArea"></div>
-			<div class="hr"></div>
+			<div id="patient"></div>
+			<div class="divider"></div>
 			<h2>Treatment Goal</h2>
-			<div id="treatmentGoal"></div>
+			<div id="goal" class="goal"></div>
+			<div class="divider"></div>
+			<h2>Decks</h2>
+			<div class="kv" id="decks"></div>
 		</section>
 
-		<!-- Center: Hand and play actions -->
 		<section class="panel">
-			<h2>Hand</h2>
-			<div class="row">
-				<button class="btn small accent" data-tab="procedure">Procedure</button>
-				<button class="btn small accent" data-tab="pharma">Pharmacology</button>
-				<button class="btn small accent" data-tab="modifier">Modifiers</button>
-				<span class="badge" id="handCounts"></span>
+			<h2>Your Hand</h2>
+			<div class="grid" id="handTabs" style="margin-bottom:6px;">
+				<button class="btn ghost" data-tab="procedure">Procedures</button>
+				<button class="btn ghost" data-tab="pharma">Pharmacology</button>
+				<button class="btn ghost" data-tab="easy">Easy</button>
+				<button class="btn ghost" data-tab="hard">Challenging</button>
+				<span class="badge" id="handCount"></span>
 			</div>
-			<div class="hr"></div>
-			<div id="handView"></div>
+			<div id="hand" class="grid scroll"></div>
 		</section>
 
-		<!-- Right: Discard + Info -->
 		<section class="panel">
-			<h2>Phase & Decks</h2>
-			<div class="kv" id="phaseInfo"></div>
-			<div class="hr"></div>
+			<div class="instruction">
+				<h3>Turn Instructions</h3>
+				<div id="instr"></div>
+			</div>
+			<div class="divider"></div>
 			<h2>Recent Log</h2>
-			<div id="log" style="font-size:12px;color:var(--muted);max-height:260px;overflow:auto"></div>
+			<div id="log" class="log scroll"></div>
 		</section>
 	</div>
-
-	<div class="footer">2‑player hot‑seat. Hands are visible to ease play. First to complete 2 cases wins.</div>
 </div>
 
-<div class="toast" id="toast" style="display:none"><div></div></div>
+<div id="toast" class="toast" style="display:none"><div></div></div>
 
 <script>
 (function(){
 	'use strict';
 
-	// ————— Utilities —————
-	function shuffle(array){for(let i=array.length-1;i>0;i--){const j=(Math.random()* (i+1))|0;[array[i],array[j]]=[array[j],array[i]];}return array}
-	const pick = (arr)=>arr[(Math.random()*arr.length)|0];
-	function toast(msg){const t=document.getElementById('toast');t.style.display='flex';t.firstElementChild.textContent=msg;clearTimeout(toast._id);toast._id=setTimeout(()=>t.style.display='none',1600)}
+	// ---------- Helpers ----------
+	const $ = (q)=>document.querySelector(q);
+	const el = (tag, cls)=>{const n=document.createElement(tag); if(cls) n.className=cls; return n;}
+	function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a}
+	function toast(msg){const t=$("#toast");t.style.display='flex';t.firstElementChild.textContent=msg;clearTimeout(toast.id);toast.id=setTimeout(()=>t.style.display='none',1500)}
 
-	// ————— Data (from your spec) —————
-	const Patients = [
-		{ id:'postop', name:'Post‑Op Pain', vuln:null, goal:[{type:'Pharma', need:'Analgesic', qty:1}] },
-		{ id:'abscess', name:'Abscessed Tooth', vuln:null, goal:[{type:'Proc', need:'Root Canal', qty:1},{type:'Pharma', need:'Anesthetic', qty:1},{type:'Pharma', need:'Antibiotic', qty:1}] },
-		{ id:'routine', name:'Routine Visit', vuln:null, goal:[{type:'Proc', need:'Prophylaxis', qty:1}] },
-		{ id:'impaction', name:'Wisdom Tooth Impaction', vuln:'Heart condition', goal:[{type:'Proc', need:'Surgical Extraction', qty:1},{type:'Pharma', need:'Anesthetic without Epinephrine', qty:1},{type:'Pharma', need:'Analgesic', qty:1}] },
-		{ id:'gingivitis', name:'Gingivitis', vuln:null, goal:[{type:'Proc', need:'Scaling and Root Planing', qty:1},{type:'Pharma', need:'Oral Rinse', qty:1}] },
-		{ id:'child', name:'Child with Cavities', vuln:'Pediatric—gentle anesthetic', goal:[{type:'Proc', need:'Cavity Filling', qty:1},{type:'Pharma', need:'Topical Anesthetic', qty:1},{type:'Pharma', need:'Fluoride Varnish', qty:1}] },
-		{ id:'missing', name:'Missing Tooth', vuln:'Smoker (healing risk)', goal:[{type:'Proc', need:'Dental Implant Surgery', qty:1},{type:'Pharma', need:'Anesthetic', qty:1},{type:'Pharma', need:'Antibiotic', qty:1}] },
-		{ id:'drysocket', name:'Dry Socket', vuln:null, goal:[{type:'Proc', need:'Pain Management', qty:1},{type:'Pharma', need:'Topical Anesthetic', qty:1},{type:'Pharma', need:'Antiseptic', qty:1}] },
-		{ id:'thrush', name:'Oral Thrush', vuln:'Weakened immunity', goal:[{type:'Proc', need:'Diagnosis and Prescription', qty:1},{type:'Pharma', need:'Antifungal', qty:1}] },
-		{ id:'jaw', name:'Jaw Pain', vuln:'Stress/Bruxism', goal:[{type:'Proc', need:'Appliance Therapy', qty:1},{type:'Pharma', need:'Muscle Relaxant', qty:1}] },
+	// ---------- Data ----------
+	const PATIENTS = [
+		{ id:'postop', name:'Post‑Op Pain', vuln:null, goal:[P('Analgesic')] , art:'🧍‍♂️💢'},
+		{ id:'abscess', name:'Abscessed Tooth', vuln:null, goal:[R('Root Canal'), P('Anesthetic'), P('Antibiotic')], art:'🦷🔥'},
+		{ id:'routine', name:'Routine Visit', vuln:null, goal:[R('Prophylaxis')], art:'🪥✨'},
+		{ id:'impaction', name:'Wisdom Tooth Impaction', vuln:'Heart condition', goal:[R('Surgical Extraction'), P('Anesthetic without Epinephrine'), P('Analgesic')], art:'🦷🪓'},
+		{ id:'gingivitis', name:'Gingivitis', vuln:null, goal:[R('Scaling and Root Planing'), P('Oral Rinse')], art:'🩸🪥'},
+		{ id:'child', name:'Child with Cavities', vuln:'Pediatric—gentle anesthetic', goal:[R('Cavity Filling'), P('Topical Anesthetic'), P('Fluoride Varnish')], art:'🧒🍭'},
+		{ id:'missing', name:'Missing Tooth', vuln:'Smoker (healing risk)', goal:[R('Dental Implant Surgery'), P('Anesthetic'), P('Antibiotic')], art:'🦷🛠️'},
+		{ id:'drysocket', name:'Dry Socket', vuln:null, goal:[R('Pain Management'), P('Topical Anesthetic'), P('Antiseptic')], art:'🦷🥴'},
+		{ id:'thrush', name:'Oral Thrush', vuln:'Weakened immunity', goal:[R('Diagnosis and Prescription'), P('Antifungal')], art:'👅🧁'},
+		{ id:'jaw', name:'Jaw Pain', vuln:'Stress/Grinding', goal:[R('Appliance Therapy'), P('Muscle Relaxant')], art:'😬🛡️'},
+	];
+	function R(name){return {type:'Proc', need:name, qty:1}}
+	function P(name){return {type:'Pharma', need:name, qty:1}}
+	const PROCEDURES = [
+		cardProc('Pain Management',[P('Analgesic')]),
+		cardProc('Root Canal',[P('Anesthetic')]),
+		cardProc('Prophylaxis',[]),
+		cardProc('Surgical Extraction',[P('Anesthetic')]),
+		cardProc('Scaling and Root Planing',[P('Anesthetic')]),
+		cardProc('Pediatric Filling',[P('Topical Anesthetic')]),
+		cardProc('Dental Implant Surgery',[P('Anesthetic'), P('Antibiotic')]),
+		cardProc('Dry Socket Treatment',[P('Topical Anesthetic'), P('Antiseptic')]),
+		cardProc('Diagnosis and Prescription',[P('Antifungal')]),
+		cardProc('Night Guard Therapy',[P('Muscle Relaxant')]),
+	];
+	function cardProc(name, req){return {kind:'procedure', name, req}}
+
+	const PHARMA = [
+		ph('Ibuprofen','Analgesic','Avoid with kidney issues'),
+		ph('Clindamycin','Antibiotic','GI side effects possible'),
+		ph('Fluoride Varnish','Preventive Agent','Apply after cleaning','Fluoride Varnish'),
+		ph('Mepivacaine','Anesthetic','No epi; heart‑safe'),
+		ph('Chlorhexidine','Antiseptic Rinse','May stain teeth','Antiseptic'),
+		ph('Benzocaine Gel','Topical Anesthetic','Surface only'),
+		ph('Dexamethasone','Steroid','Use as directed','Analgesic'),
+		ph('Eugenol','Antiseptic','Strong taste/smell'),
+		ph('Nystatin','Antifungal','Rinse; tolerability varies','Antifungal'),
+		ph('Cyclobenzaprine','Muscle Relaxant','Drowsiness'),
+	];
+	function ph(name,type,special,as){return {kind:'pharma', name, type, as:as||type, special}}
+	const pharmaClass = c => c.as || c.type;
+
+	// Easy Modifiers
+	const EASY = [
+		{key:'aid', name:"Dental Assistant’s Aid", text:'Draw +1 Procedure now', play:(G,p)=>drawOne(G,p,'procedure')},
+		{key:'rush', name:'Rush Order', text:'Use 1 fewer Pharmacology this turn', play:(G,p)=>G.ctx[p].rush=true},
+		{key:'conf', name:'Clinical Confidence', text:'Ignore one Special Condition this turn', play:(G,p)=>G.ctx[p].ignore=true},
+	];
+	// Challenging Modifiers (subset + examples)
+	const HARD = [
+		{key:'panic', name:'Patient Panic', text:'Target discards 1 random card', play:(G,t)=>discardRandom(G,t)},
+		{key:'short', name:'Supply Shortage', text:'Block one Pharma class for a round', play:(G)=>blockRandom(G)},
+		{key:'unexpected', name:'Unexpected Complication', text:'Target also needs Antibiotic', play:(G,t)=>addNeed(G,t,P('Antibiotic'))},
+		{key:'faint', name:'Patient Faint', text:'Target skips next turn', play:(G,t)=>G.ctx[t].skip=true},
+		{key:'anesfail', name:'Anesthetic Failure', text:'Must play a new Anesthetic', play:(G,t)=>G.ctx[t].anesFail=true},
+		{key:'contam', name:'Contaminated Instrument', text:'Discard all Procedures; draw 3', play:(G,t)=>contam(G,t)},
 	];
 
-	const Procedures = [
-		{ name:'Pain Management', req:[{type:'Pharma', need:'Analgesic', qty:1}] },
-		{ name:'Root Canal', req:[{type:'Pharma', need:'Anesthetic', qty:1}] },
-		{ name:'Prophylaxis', req:[] },
-		{ name:'Surgical Extraction', req:[{type:'Pharma', need:'Anesthetic', qty:1}] },
-		{ name:'Scaling and Root Planing', req:[{type:'Pharma', need:'Anesthetic', qty:1}] },
-		{ name:'Pediatric Filling', req:[{type:'Pharma', need:'Topical Anesthetic', qty:1}] },
-		{ name:'Dental Implant Surgery', req:[{type:'Pharma', need:'Anesthetic', qty:1},{type:'Pharma', need:'Antibiotic', qty:1}] },
-		{ name:'Dry Socket Treatment', req:[{type:'Pharma', need:'Topical Anesthetic', qty:1},{type:'Pharma', need:'Antiseptic', qty:1}] },
-		{ name:'Diagnosis and Prescription', req:[{type:'Pharma', need:'Antifungal', qty:1}] },
-		{ name:'Night Guard Therapy', req:[{type:'Pharma', need:'Muscle Relaxant', qty:1}] },
-	];
-
-	const Pharma = [
-		{ name:'Ibuprofen', type:'Analgesic', special:'Avoid with kidney issues' },
-		{ name:'Clindamycin', type:'Antibiotic', special:'GI side effects possible' },
-		{ name:'Fluoride Varnish', type:'Preventive Agent', special:'Apply after cleaning' },
-		{ name:'Mepivacaine', type:'Anesthetic', special:'No epi; heart‑safe' },
-		{ name:'Chlorhexidine', type:'Antiseptic Rinse', as:'Antiseptic', special:'May stain teeth' },
-		{ name:'Benzocaine Gel', type:'Topical Anesthetic', as:'Topical Anesthetic', special:'Surface only' },
-		{ name:'Dexamethasone', type:'Steroid', as:'Analgesic', special:'Use as directed' },
-		{ name:'Eugenol', type:'Antiseptic', special:'Strong taste/smell' },
-		{ name:'Nystatin', type:'Antifungal', as:'Antifungal', special:'Rinse—tolerability varies' },
-		{ name:'Cyclobenzaprine', type:'Muscle Relaxant', as:'Muscle Relaxant', special:'Drowsiness' },
-	];
-
-	// For goals/requirements we compare to conceptual types:
-	// Map pharma card to conceptual "class" used in rules
-	function pharmaClass(card){
-		return card.as || card.type;
-	}
-
-	// Modifiers
-	const Easy = [
-		{ key:'assistant', name:"Dental Assistant's Aid", text:'Draw +1 card now', play:(G, p)=>{
-			drawOne(G, p, 'procedure'); // rule says “from the deck”, we’ll draw one Procedure by default
-		}},
-		{ key:'rush', name:'Rush Order', text:'Use 1 fewer required Pharmacology this turn', play:(G, p)=>{
-			G.ctx[p].rushOrder = true;
-		}},
-		{ key:'confidence', name:'Clinical Confidence', text:'Ignore one Special Condition this turn', play:(G, p)=>{
-			G.ctx[p].ignoreSpecial = true;
-		}},
-	];
-
-	const Hard = [
-		{ key:'panic', name:'Patient Panic', text:'Target discards 1 random card', play:(G, target)=>{
-			const choices = [...G.players[target].pharma, ...G.players[target].procedures];
-			if(choices.length===0){log('No card to discard.');return;}
-			const c = choices[(Math.random()*choices.length)|0];
-			discardCard(G, target, c);
-			log(`Player ${target+1} discards ${label(c)} (panic).`);
-		}},
-		{ key:'shortage', name:'Supply Shortage', text:'Block a Pharma class for a round', play:(G/*,target*/)=>{
-			const classes = ['Anesthetic','Antibiotic','Analgesic','Antifungal','Topical Anesthetic','Antiseptic','Muscle Relaxant'];
-			G.blockedClass = pick(classes);
-			G.blockedUntilTurn = G.turn + G.players.length; // one full round
-			log(`Supply Shortage: ${G.blockedClass} unavailable until next round.`);
-		}},
-		{ key:'unexpected', name:'Unexpected Complication', text:'Target patient gains new requirement: Antibiotic', play:(G, target)=>{
-			const p = G.players[target];
-			p.patient.goal.push({type:'Pharma', need:'Antibiotic', qty:1, added:true});
-			log(`Complication: Player ${target+1} now also needs Antibiotic.`);
-		}},
-		// Example complications
-		{ key:'drugres', name:'Drug Resistance', text:'Current Antibiotic ineffective; need different one', play:(G, target)=>{
-			G.ctx[target].drugResistance = true;
-			log(`Drug Resistance on Player ${target+1}.`);
-		}},
-		{ key:'faint', name:'Patient Faint', text:'Target skips next turn', play:(G, target)=>{
-			G.ctx[target].skipNext = true;
-			log(`Player ${target+1} will skip next turn (faint).`);
-		}},
-		{ key:'anesfail', name:'Anesthetic Failure', text:'Discard current Anesthetic and replay a new one', play:(G, target)=>{
-			G.ctx[target].anestheticFailure = true;
-			log(`Anesthetic Failure on Player ${target+1}.`);
-		}},
-		{ key:'allergy', name:'Allergic Reaction', text:'Discard current Pharma and draw new patient with Drug Allergy', play:(G, target)=>{
-			const p=G.players[target];
-			// Discard one random pharma in hand as the reacted drug
-			if(p.pharma.length){discardCard(G,target,p.pharma.pop());}
-			p.patient.vuln = 'Drug Allergy';
-			log(`Player ${target+1} patient now has Drug Allergy.`);
-			// Optionally swap patient entirely: the spec says "draw a new Patient Card"
-			// We’ll implement: draw new patient and replace, keeping progress reset.
-			const np = draw(G,'patient');
-			p.patient = np; p.progress = {};
-			log(`Player ${target+1} drew new patient: ${np.name}. Progress reset.`);
-		}},
-		{ key:'malfunction', name:'Equipment Malfunction', text:'Target misses next turn to fix equipment', play:(G, target)=>{
-			G.ctx[target].skipNext = true;
-			log(`Player ${target+1} will miss next turn (equipment).`);
-		}},
-		{ key:'bleeding', name:'Unexpected Bleeding', text:'Must play Hemostatic Agent or miss turn', play:(G, target)=>{
-			G.ctx[target].needsHemostat = true;
-			log(`Unexpected Bleeding for Player ${target+1}.`);
-		}},
-		{ key:'refusal', name:'Patient Refusal', text:'Discard one card before continuing', play:(G, target)=>{
-			const options = [...G.players[target].pharma, ...G.players[target].procedures];
-			if(options.length){discardCard(G,target,options.pop());log(`Player ${target+1} discards a card (refusal).`)}
-		}},
-		{ key:'contaminated', name:'Contaminated Instrument', text:'Discard all Procedure cards and redraw 3', play:(G, target)=>{
-			const pl=G.players[target];
-			while(pl.procedures.length){discardCard(G,target,pl.procedures.pop());}
-			for(let i=0;i<3;i++) drawOne(G,target,'procedure');
-			log(`Player ${target+1} discarded procedures and drew 3 new.`);
-		}},
-		{ key:'palpit', name:'Heart Palpitations', text:'Discard any Anesthetic containing epinephrine', play:(G, target)=>{
-			const pl=G.players[target];
-			pl.pharma = pl.pharma.filter(c=>{
-				const keep = pharmaClass(c)!=='Anesthetic with Epinephrine';
-				if(!keep) discardCard(G,target,c);
-				return keep;
-			});
-			log(`Player ${target+1} discarded epi anesthetics.`);
-		}},
-		{ key:'drysocketEvt', name:'Dry Socket (Event)', text:'If extraction done, must add Dry Socket Treatment', play:(G, target)=>{
-			const pl=G.players[target];
-			pl.patient.goal.push({type:'Proc', need:'Dry Socket Treatment', qty:1, added:true});
-			log(`Dry Socket: Player ${target+1} must also perform Dry Socket Treatment.`);
-		}},
-	];
-
-	// ————— Game state —————
+	// ---------- Game State ----------
 	const G = {
 		players:[
-			{ procedures:[], pharma:[], easy:[], hard:[], patient:null, progress:{}, casesWon:0 },
-			{ procedures:[], pharma:[], easy:[], hard:[], patient:null, progress:{}, casesWon:0 },
+			{proc:[],ph:[],easy:[],hard:[],patient:null,progress:{},cases:0},
+			{proc:[],ph:[],easy:[],hard:[],patient:null,progress:{},cases:0},
 		],
-		decks:{ patient:[], procedure:[], pharma:[], easy:[], hard:[] },
-		discard:{ patient:[], procedure:[], pharma:[], easy:[], hard:[] },
-		turn:0, phase:0, // 0 Draw, 1 Action, 2 Mod, 3 Replenish
-		activeTab:'procedure',
-		blockedClass:null, blockedUntilTurn:-1,
+		deck:{patient:[],procedure:[],pharma:[],easy:[],hard:[]},
+		discard:{patient:[],procedure:[],pharma:[],easy:[],hard:[]},
+		turn:0, phase:0, // 0 Draw, 1 Action, 2 Modifiers
+		tab:'procedure',
+		blocked:null, blockedUntil:-1,
 		ctx:[{},{},],
-		log:[],
+		log:[]
 	};
-	function log(msg){G.log.unshift(msg); renderLog();}
 
-	// Setup and dealing per rules
+	// ---------- Setup ----------
 	function setup(){
-		// Build decks
-		G.decks.patient = shuffle(Patients.map(x=>({...x,kind:'patient'})));
-		G.decks.procedure = shuffle([].concat(...Procedures.map(c=>Array(4).fill(null).map(()=>({kind:'procedure',...c}))))); // 4x each
-		G.decks.pharma = shuffle([].concat(...Pharma.map(c=>Array(4).fill(null).map(()=>({kind:'pharma',...c})))));
-		G.decks.easy = shuffle(Easy.map(c=>({kind:'easy',...c})));
-		G.decks.hard = shuffle(Hard.map(c=>({kind:'hard',...c})));
+		G.deck.patient = shuffle(PATIENTS.map(p=>({...p,kind:'patient'})));
+		G.deck.procedure = shuffle(flatCopies(PROCEDURES,4));
+		G.deck.pharma = shuffle(flatCopies(PHARMA,4));
+		G.deck.easy = shuffle(EASY.map(x=>({kind:'easy',...x})));
+		G.deck.hard = shuffle(HARD.map(x=>({kind:'hard',...x})));
 		G.discard={patient:[],procedure:[],pharma:[],easy:[],hard:[]};
-		G.turn=0; G.phase=0; G.activeTab='procedure';
-		G.blockedClass=null; G.blockedUntilTurn=-1;
-		G.ctx=[{},{},]; G.log=[];
+		G.turn=0; G.phase=0; G.tab='procedure'; G.blocked=null; G.blockedUntil=-1; G.ctx=[{},{},]; G.log=[];
 
-		for(let p=0;p<G.players.length;p++){
-			const pl = G.players[p] = { procedures:[], pharma:[], easy:[], hard:[], patient:null, progress:{}, casesWon:0 };
-			// Starting hands
-			// 2 Patient -> choose 1 (we auto-pick best fit randomly, other bottom)
-			const pt1 = draw(G,'patient'), pt2 = draw(G,'patient');
-			pl.patient = pick([pt1, pt2]); G.discard.patient.push(pl.patient===pt1?pt2:pt1);
+		for(let p=0;p<2;p++){
+			const p1 = draw('patient'), p2=draw('patient');
+			G.players[p].patient = Math.random()<.5?p1:p2;
+			G.discard.patient.push(G.players[p].patient===p1?p2:p1);
 			for(let i=0;i<3;i++) drawOne(G,p,'procedure');
 			for(let i=0;i<4;i++) drawOne(G,p,'pharma');
-			pl.easy.push(draw(G,'easy'));
-			pl.hard.push(draw(G,'hard'));
+			G.players[p].easy.push(draw('easy'));
+			G.players[p].hard.push(draw('hard'));
 		}
-		log('Game started. Each player drew starting hands and a patient.');
+		log('New game. Each player chose a starting patient and drew starting hands.');
 		renderAll();
 	}
-	function draw(G, type){
-		if(G.decks[type].length===0){ // reshuffle discard
-			G.decks[type]=shuffle(G.discard[type]); G.discard[type]=[];
-		}
-		return G.decks[type].pop();
+	function flatCopies(arr,n){const out=[];for(const x of arr){for(let i=0;i<n;i++) out.push(struct(x));}return out}
+	function struct(x){return JSON.parse(JSON.stringify(x))}
+	function draw(type){
+		if(G.deck[type].length===0){G.deck[type]=shuffle(G.discard[type]);G.discard[type]=[];}
+		return G.deck[type].pop();
 	}
-	function drawOne(G,p,type){
-		if(type==='procedure') G.players[p].procedures.push(draw(G,'procedure'));
-		if(type==='pharma') G.players[p].pharma.push(draw(G,'pharma'));
-		if(type==='easy') G.players[p].easy.push(draw(G,'easy'));
-		if(type==='hard') G.players[p].hard.push(draw(G,'hard'));
+	function drawOne(Gm,p,type){
+		if(type==='procedure') Gm.players[p].proc.push(draw('procedure'));
+		if(type==='pharma') Gm.players[p].ph.push(draw('pharma'));
+		if(type==='easy') Gm.players[p].easy.push(draw('easy'));
+		if(type==='hard') Gm.players[p].hard.push(draw('hard'));
 	}
-	function discardCard(G,p,card){
-		G.discard[card.kind].push(card);
-	}
-	function current(){return G.players[G.turn%G.players.length]}
+	function log(s){G.log.unshift(s); renderLog();}
 
-	// ————— Phases —————
-	function nextPhase(){
-		const pid = G.turn%G.players.length;
-		const pl = G.players[pid];
-		// Phase specific end validations
-		if(G.phase===0){
-			// Draw: 1 Procedure, 1 Pharma
-			drawOne(G,pid,'procedure'); drawOne(G,pid,'pharma');
-			// Hand limits: ≤7 each (enforced at end of turn per rules; we soft‑enforce now)
-			pl.procedures = pl.procedures.slice(-7);
-			pl.pharma = pl.pharma.slice(-7);
-			log(`Player ${pid+1} drew 1 Procedure and 1 Pharmacology.`);
+	// ---------- Phase flow ----------
+	function next(){
+		if(G.phase===0){ // Draw
+			drawOne(G,curId(),'procedure'); drawOne(G,curId(),'pharma');
+			enforceHandLimit();
+			log(`P${curId()+1} drew 1 Procedure and 1 Pharmacology.`);
+			G.phase=1;
+		}else if(G.phase===1){ // Action
+			G.phase=2;
+		}else{ // Modifiers -> Replenish+End
+			endTurn();
+			return;
 		}
-		if(G.phase===3){
-			// End of Replenish → auto advance to endTurn()
-			endTurn(); return;
-		}
-		G.phase = (G.phase+1)%4;
 		renderAll();
 	}
 	function endTurn(){
-		const pid = G.turn%G.players.length;
-		const pl = G.players[pid];
+		enforceHandLimit();
+		// expire round effects
+		G.ctx.forEach(c=>{c.rush=false;c.ignore=false;});
+		if(G.blocked && G.turn+1>=G.blockedUntil) G.blocked=null;
 
-		// Hand limit at end of turn
-		if(pl.procedures.length>7) { while(pl.procedures.length>7) discardCard(G,pid,pl.procedures.shift()); }
-		if(pl.pharma.length>7) { while(pl.pharma.length>7) discardCard(G,pid,pl.pharma.shift()); }
-
-		// Round housekeeping
 		G.turn++;
 		G.phase=0;
-		G.activeTab='procedure';
-		// Rush/confidence expire
-		G.ctx.forEach(c=>{c.rushOrder=false;c.ignoreSpecial=false; if(c.usedHemostat) c.needsHemostat=false;});
-		// Unblock after round
-		if(G.blockedClass && G.turn>=G.blockedUntilTurn) G.blockedClass=null;
-
-		const np = G.turn%G.players.length;
-		if(G.ctx[np].skipNext){ log(`Player ${np+1} skips this turn.`); G.ctx[np].skipNext=false; G.turn++; }
+		if(G.ctx[curId()].skip){log(`P${curId()+1} skips a turn.`); G.ctx[curId()].skip=false; G.turn++; }
 		renderAll();
 	}
-
-	// ————— Gameplay actions —————
-	function canUsePharmaClass(cls){
-		if(!G.blockedClass) return true;
-		return !(cls===G.blockedClass);
+	function enforceHandLimit(){
+		const p=cur(); while(p.proc.length>7) G.discard.procedure.push(p.proc.shift());
+		while(p.ph.length>7) G.discard.pharma.push(p.ph.shift());
 	}
-	function tryPlayProcedure(procIndex){
-		if(G.phase!==1){toast('Action phase required');return;}
-		const pid = G.turn%G.players.length;
-		const pl = G.players[pid];
-		const proc = pl.procedures[procIndex];
+	function cur(){return G.players[curId()]}
+	function curId(){return G.turn%2}
 
-		// Check requirements
-		const reqs = proc.req.slice();
-		if(G.ctx[pid].rushOrder && reqs.length>0) reqs.pop();
+	// ---------- Actions ----------
+	function playProcedure(i){
+		if(G.phase!==1){toast('Action phase');return;}
+		const p=cur(), pid=curId(), card=p.proc[i];
+		// requirements
+		const reqs = card.req.slice();
+		if(G.ctx[pid].rush && reqs.length) reqs.pop();
 
-		// If anesthetic without epinephrine is required, only allow Mepivacaine class
-		function matchesReq(ph, req){
-			if(req.type==='Pharma'){
-				const cls = pharmaClass(ph);
-				if(req.need==='Anesthetic without Epinephrine'){
-					return cls==='Anesthetic' && ph.name==='Mepivacaine';
-				}
-				return cls===req.need;
+		function matches(ph, r){
+			if(r.type!=='Pharma') return false;
+			if(r.need==='Anesthetic without Epinephrine'){
+				return ph.name==='Mepivacaine'; // safe no-epi
 			}
-			return false;
+			return pharmaClass(ph)===r.need;
 		}
-
-		const consumed=[];
+		const consume=[];
 		for(const r of reqs){
-			const idx = pl.pharma.findIndex(ph=>matchesReq(ph,r) && canUsePharmaClass(pharmaClass(ph)));
-			if(idx<0){toast('Missing requirement');return;}
-			consumed.push(pl.pharma.splice(idx,1)[0]);
+			const idx = p.ph.findIndex(ph=>matches(ph,r) && !isBlocked(pharmaClass(ph)));
+			if(idx<0){toast('Missing required Pharmacology');return;}
+			consume.push(p.ph.splice(idx,1)[0]);
 		}
-		consumed.forEach(c=>discardCard(G,pid,c));
-		// Place procedure next to patient (record progress)
-		discardCard(G,pid,pl.procedures.splice(procIndex,1)[0]);
-		pl.progress[proc.name]=(pl.progress[proc.name]||0)+1;
-		log(`Player ${pid+1} performed ${proc.name}.`);
-
-		checkWinOrContinue(pid);
+		consume.forEach(c=>G.discard.pharma.push(c));
+		const played = p.proc.splice(i,1)[0];
+		G.discard.procedure.push(played);
+		p.progress[played.name]=(p.progress[played.name]||0)+1;
+		log(`P${pid+1} performed ${played.name}.`);
+		checkCase(pid);
 		renderAll();
 	}
-	function playEasy(index){
-		if(G.phase!==2){toast('Modifier phase required');return;}
-		const pid = G.turn%G.players.length;
-		const pl=G.players[pid];
-		const card = pl.easy.splice(index,1)[0];
-		const impl = Easy.find(e=>e.key===card.key);
-		impl.play(G,pid);
-		log(`Player ${pid+1} played Easy: ${card.name}.`);
-		// Replenish immediately
-		pl.easy.push(draw(G,'easy'));
+	function isBlocked(cls){return G.blocked===cls}
+	function playEasy(i){
+		if(G.phase!==2){toast('Modifiers phase');return;}
+		const pid=curId(); const p=cur();
+		const card = p.easy.splice(i,1)[0];
+		const def = EASY.find(x=>x.key===card.key);
+		def.play(G,pid); log(`P${pid+1} played Easy: ${card.name}.`);
+		p.easy.push(draw('easy'));
 		renderAll();
 	}
-	function playHard(index,targetPid){
-		if(G.phase!==2){toast('Modifier phase required');return;}
-		const pid = G.turn%G.players.length;
-		if(targetPid===pid){toast('Choose opponent');return;}
-		const pl=G.players[pid];
-		const card = pl.hard.splice(index,1)[0];
-		const impl = Hard.find(h=>h.key===card.key);
-		impl.play(G,targetPid);
-		log(`Player ${pid+1} played Challenging: ${card.name} on Player ${targetPid+1}.`);
-		pl.hard.push(draw(G,'hard')); // Replenish
+	function playHard(i,target){
+		if(G.phase!==2){toast('Modifiers phase');return;}
+		const pid=curId(); if(target===pid){toast('Choose opponent');return;}
+		const p=cur(); const card=p.hard.splice(i,1)[0];
+		const def = HARD.find(x=>x.key===card.key);
+		def.play(G,target);
+		log(`P${pid+1} played Challenging: ${card.name} on P${target+1}.`);
+		p.hard.push(draw('hard'));
 		renderAll();
 	}
-	function checkWinOrContinue(pid){
-		const pl=G.players[pid];
-		// Build current completion snapshot versus patient goal
+	function checkCase(pid){
+		const pl=G.players[pid], g=pl.patient.goal;
 		let ok=true;
-		const tempCounts={};
-		// Count procedures placed (from progress)
-		function needCount(label){return pl.patient.goal.filter(g=>g.need===label).reduce((a,b)=>a+b.qty,0)}
-		for(const g of pl.patient.goal){
-			if(g.type==='Proc'){
-				const have = pl.progress[g.need]||0;
-				if(have<g.qty) ok=false;
-			}
-			if(g.type==='Pharma'){
-				// Pharma requirements are satisfied when consumed while playing procedures.
-				// We approximate by tracking a virtual counter: each time a requirement is consumed,
-				// we recorded by discarding; to assert goal, require at least qty times that class was consumed overall.
-				tempCounts[g.need]=(tempCounts[g.need]||0)+0; // placeholder
+		for(const need of g){
+			if(need.type==='Proc'){
+				if((pl.progress[need.need]||0)<need.qty){ok=false;break;}
+			}else{
+				// Pharma requirements are satisfied upon consumption while playing procedures,
+				// so nothing extra here; we ensure procedures drive consumption.
 			}
 		}
-		// If procedures complete and all pharma reqs were used during them, consider case done.
 		if(ok){
-			pl.casesWon+=1;
-			log(`Player ${pid+1} completed a case! Total cases: ${pl.casesWon}`);
-			// New case
-			pl.patient = draw(G,'patient'); pl.progress={};
-			// Draw starting: rules say after completing a case, draw another case to complete (no extra cards).
-			if(pl.casesWon>=2){
-				alert(`Player ${pid+1} wins the game!`);
-				setup(); return;
-			}
+			pl.cases++;
+			log(`P${pid+1} completed a case! (${pl.cases}/2)`);
+			if(pl.cases>=2){ alert(`P${pid+1} wins!`); setup(); return; }
+			// New case, progress resets
+			pl.patient = draw('patient'); pl.progress = {};
+			log(`P${pid+1} drew a new patient: ${pl.patient.name}.`);
 		}
 	}
 
-	// ————— Rendering —————
+	// ---------- Hard effects helpers ----------
+	function discardRandom(Gm, t){
+		const pl=Gm.players[t];
+		const pool=[...pl.proc.map(x=>({src:'procedure',card:x})), ...pl.ph.map(x=>({src:'pharma',card:x}))];
+		if(!pool.length){log('No card to discard.');return;}
+		const pick=pool[(Math.random()*pool.length)|0];
+		if(pick.src==='procedure'){pl.proc.splice(pl.proc.indexOf(pick.card),1); Gm.discard.procedure.push(pick.card);}
+		else {pl.ph.splice(pl.ph.indexOf(pick.card),1); Gm.discard.pharma.push(pick.card);}
+	}
+	function blockRandom(Gm){
+		const classes=['Anesthetic','Antibiotic','Analgesic','Antifungal','Topical Anesthetic','Antiseptic','Muscle Relaxant'];
+		Gm.blocked=classes[(Math.random()*classes.length)|0];
+		Gm.blockedUntil=Gm.turn+2; // one round in 2p
+	}
+	function addNeed(Gm,t,need){Gm.players[t].patient.goal.push(need)}
+	function contam(Gm,t){const pl=Gm.players[t]; while(pl.proc.length){Gm.discard.procedure.push(pl.proc.pop());} for(let i=0;i<3;i++) drawOne(Gm,t,'procedure')}
+
+	// ---------- Rendering ----------
 	function renderAll(){
-		renderTop();
+		// turn pills
+		['pillDraw','pillAction','pillMod'].forEach((id,i)=>$("#"+id).classList.toggle('active', i===G.phase));
+		$('#who').textContent = `P${curId()+1}’s turn`;
+
 		renderPatient();
 		renderGoal();
+		renderDecks();
 		renderHand();
-		renderInfo();
-		renderLog();
-	}
-	function renderTop(){
-		const pid = G.turn%G.players.length;
-		const phases=['Draw','Action (Procedure)','Modifiers','Replenish'];
-		document.getElementById('turnBadge').textContent = `Player ${pid+1}’s turn • Phase: ${phases[G.phase]}`;
-		document.getElementById('handCounts').textContent =
-			`Proc ${G.players[pid].procedures.length}/7 · Pharma ${G.players[pid].pharma.length}/7 · Easy ${G.players[pid].easy.length} · Chall ${G.players[pid].hard.length}`;
+		renderInstructions();
 	}
 	function renderPatient(){
-		const p=current().patient;
-		const el=document.getElementById('patientArea');
-		el.innerHTML='';
-		const c=document.createElement('div'); c.className='card';
-		c.innerHTML = `<h3>🧑‍⚕️ ${p.name}</h3>
-			<p><span class="tag">Condition</span> ${descCondition(p)}</p>
-			<p><span class="tag">Vulnerability</span> ${p.vuln||'None'}</p>`;
-		el.appendChild(c);
-	}
-	function descCondition(p){
-		const map={
-			'postop':'Pain after dental procedure',
-			'abscess':'Severe infection with abscess',
-			'routine':'Minor plaque buildup',
-			'impaction':'Impacted wisdom tooth causing pain',
-			'gingivitis':'Swollen, bleeding gums',
-			'child':'Pediatric patient with multiple cavities',
-			'missing':'Needs implant replacement',
-			'drysocket':'Post-extraction clot loss pain',
-			'thrush':'White patches; fungal',
-			'jaw':'TMJ pain / grinding',
-		}; return map[p.id]||'';
+		const p=cur().patient;
+		const box=$('#patient'); box.innerHTML='';
+		const c=el('div','card');
+		c.innerHTML = `
+			<div class="title"><span class="gem proc"></span> <span>${p.art} ${p.name}</span></div>
+			<div class="line"><b>Vulnerability:</b> ${p.vuln||'None'}</div>
+			<div class="tags">${p.goal.map(g=>`<span class="tag">${g.type==='Proc'?'Procedure':'Pharma'}: ${g.need}</span>`).join('')}</div>
+		`;
+		box.appendChild(c);
 	}
 	function renderGoal(){
-		const wrap=document.getElementById('treatmentGoal');
-		wrap.innerHTML='';
-		const p=current();
-		const goal = p.patient.goal;
-		goal.forEach(g=>{
-			const done = (g.type==='Proc') ? ((p.progress[g.need]||0)>=g.qty) : false;
-			const d=document.createElement('div'); d.className='goalItem'+(done?' done':'');
-			d.textContent = `${g.qty}× ${g.type==='Proc'?'Procedure':'Pharmacology'}: ${g.need}${g.added?' (added)':''}`;
-			wrap.appendChild(d);
-		});
+		const wrap=$('#goal'); wrap.innerHTML='';
+		const p=cur(), g=p.patient.goal;
+		for(const need of g){
+			const done = need.type==='Proc' ? ((p.progress[need.need]||0)>=need.qty) : false;
+			const row=el('div','goalItem'+(done?' done':''));
+			row.innerHTML = `<div>${need.qty}× ${need.type==='Proc'?'Procedure':'Pharma'}: <b>${need.need}</b></div><div>${done?'✔':''}</div>`;
+			wrap.appendChild(row);
+		}
+	}
+	function renderDecks(){
+		const kv=$('#decks'); kv.innerHTML='';
+		function add(k,v){const a=el('div');a.textContent=k;const b=el('div');b.textContent=v;kv.append(a,b);}
+		add('Patient deck', G.deck.patient.length);
+		add('Procedure deck', G.deck.procedure.length);
+		add('Pharma deck', G.deck.pharma.length);
+		add('Easy deck', G.deck.easy.length);
+		add('Challenging deck', G.deck.hard.length);
+		add('Blocked class', G.blocked?G.blocked:'None');
+		add('Cases won', `P1: ${G.players[0].cases}  •  P2: ${G.players[1].cases}`);
 	}
 	function renderHand(){
-		const pid=G.turn%G.players.length;
-		const pl=G.players[pid];
-		const view=document.getElementById('handView');
-		view.innerHTML='';
+		const wrap=$('#hand'); wrap.innerHTML='';
+		// tab buttons style
+		document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('primary', b.dataset.tab===G.tab));
+		const p=cur();
+		$('#handCount').textContent = `Proc ${p.proc.length}/7 • Pharma ${p.ph.length}/7 • Easy ${p.easy.length} • Chall ${p.hard.length}`;
 
-		const tabButtons=document.querySelectorAll('[data-tab]');
-		tabButtons.forEach(b=>b.classList.toggle('primary', b.dataset.tab===G.activeTab));
-
-		if(G.activeTab==='procedure'){
-			const wrap=document.createElement('div'); wrap.className='cards';
-			pl.procedures.forEach((card,idx)=>{
-				const c=document.createElement('div'); c.className='card';
-				c.innerHTML = `<h3>🛠️ ${card.name}</h3>
-					<p><span class="tag">Requirements</span> ${
-						card.req.length?card.req.map(r=>`${r.qty}× ${r.need}`).join(', '):'None'
-					}</p>
-					<div class="row"><button class="btn small primary">Play</button></div>`;
-				c.querySelector('button').onclick=()=>tryPlayProcedure(idx);
-				wrap.appendChild(c);
+		if(G.tab==='procedure'){
+			p.proc.forEach((card,i)=>wrap.appendChild(viewProc(card,()=>playProcedure(i))));
+		}else if(G.tab==='pharma'){
+			p.ph.forEach(card=>wrap.appendChild(viewPh(card)));
+		}else if(G.tab==='easy'){
+			p.easy.forEach((card,i)=>wrap.appendChild(viewMod(card,'easy',()=>playEasy(i))));
+		}else{
+			p.hard.forEach((card,i)=>{
+				const c=viewMod(card,'hard',null);
+				const row=el('div','actions');
+				const b1=el('button','btn warn'); b1.textContent='Play on P1'; b1.onclick=()=>playHard(i,0);
+				const b2=el('button','btn warn'); b2.textContent='Play on P2'; b2.onclick=()=>playHard(i,1);
+				row.append(b1,b2); c.appendChild(row); wrap.appendChild(c);
 			});
-			view.appendChild(wrap);
-		}
-		if(G.activeTab==='pharma'){
-			const wrap=document.createElement('div'); wrap.className='cards';
-			pl.pharma.forEach((card)=>{
-				const cls=pharmaClass(card);
-				const blocked = !canUsePharmaClass(cls);
-				const c=document.createElement('div'); c.className='card';
-				c.innerHTML = `<h3>💊 ${card.name}</h3>
-					<p><span class="tag">Type</span> ${cls}${blocked?' — <b style="color:var(--danger)">BLOCKED</b>':''}</p>
-					<p style="opacity:.8">${card.special||''}</p>`;
-				wrap.appendChild(c);
-			});
-			view.appendChild(wrap);
-		}
-		if(G.activeTab==='modifier'){
-			const wrap=document.createElement('div'); wrap.className='cards';
-			// Easy
-			pl.easy.forEach((card,idx)=>{
-				const c=document.createElement('div'); c.className='card';
-				c.innerHTML = `<h3>🟢 ${card.name}</h3><p>${card.text}</p>
-					<div class="row"><button class="btn small primary">Play (self)</button></div>`;
-				c.querySelector('button').onclick=()=>playEasy(idx);
-				wrap.appendChild(c);
-			});
-			// Challenging
-			pl.hard.forEach((card,idx)=>{
-				const c=document.createElement('div'); c.className='card';
-				c.innerHTML = `<h3>🔴 ${card.name}</h3><p>${card.text}</p>
-					<div class="row">
-						<button class="btn small danger">Play on P1</button>
-						<button class="btn small danger">Play on P2</button>
-					</div>`;
-				const [b1,b2]=c.querySelectorAll('button');
-				b1.onclick=()=>playHard(idx,0);
-				b2.onclick=()=>playHard(idx,1);
-				wrap.appendChild(c);
-			});
-			view.appendChild(wrap);
 		}
 	}
-	function renderInfo(){
-		const pid=G.turn%G.players.length;
-		const kv=document.getElementById('phaseInfo'); kv.innerHTML='';
-		function add(k,v){const a=document.createElement('div');a.textContent=k;const b=document.createElement('div');b.textContent=v;kv.append(a,b);}
-		add('Player',`P${pid+1}`);
-		add('Cases Completed', `${G.players[pid].casesWon}`);
-		add('Blocked Pharma', G.blockedClass?`${G.blockedClass} (round)`: 'None');
+	function viewProc(card,onPlay){
+		const c=el('div','card');
+		c.innerHTML = `
+			<div class="title"><span class="gem proc"></span><span>🛠️ ${card.name}</span></div>
+			<div class="line"><b>Requires:</b> ${card.req.length?card.req.map(r=>`${r.qty}× ${r.need}`).join(', '):'None'}</div>
+		`;
+		const act=el('div','actions'); const b=el('button','btn primary'); b.textContent='Play'; b.onclick=onPlay; act.appendChild(b); c.appendChild(act);
+		return c;
+	}
+	function viewPh(card){
+		const c=el('div','card');
+		const cls=pharmaClass(card), blocked=isBlocked(cls);
+		c.innerHTML = `
+			<div class="title"><span class="gem pharma"></span><span>💊 ${card.name}</span></div>
+			<div class="line"><b>Class:</b> ${cls}${blocked?' — <b style="color:#fb7185">BLOCKED</b>':''}</div>
+			<div class="line" style="opacity:.85">${card.special||''}</div>
+		`;
+		return c;
+	}
+	function viewMod(card,type,onPlay){
+		const c=el('div','card');
+		c.innerHTML = `
+			<div class="title"><span class="gem ${type}"></span><span>${type==='easy'?'🟢':'🔴'} ${card.name}</span></div>
+			<div class="line">${card.text}</div>
+		`;
+		if(onPlay){const act=el('div','actions'); const b=el('button','btn primary'); b.textContent='Play'; b.onclick=onPlay; act.appendChild(b); c.appendChild(act);}
+		return c;
 	}
 	function renderLog(){
-		const el=document.getElementById('log');
-		el.innerHTML=G.log.slice(0,30).map(x=>`• ${x}`).join('<br/>');
+		$('#log').innerHTML = G.log.slice(0,30).map(x=>'• '+x).join('<br/>');
+	}
+	function renderInstructions(){
+		const pid=curId();
+		const steps = {
+			0:[
+				'Draw one Procedure and one Pharmacology.',
+				'Hands may not exceed 7 Procedure and 7 Pharmacology at end of turn.',
+				'When ready, press Next to go to Procedure.'
+			],
+			1:[
+				'Play one Procedure to treat your patient.',
+				'You must discard the Pharmacology required by that Procedure.',
+				'Your goal is shown at left. Each completed Procedure checks off its item.',
+				'Press Next to proceed to Modifiers (optional).'
+			],
+			2:[
+				'Optionally play ONE modifier.',
+				'Easy: play on yourself for a boost.',
+				'Challenging: play on your opponent to hinder them.',
+				'Replacement: when you play a modifier, you immediately draw a new one of the same type.',
+				'Press End Turn to finish (limits are enforced automatically).'
+			]
+		}[G.phase];
+		const box=$('#instr'); box.innerHTML='';
+		steps.forEach((t,i)=>{
+			const row=el('div','step'); row.innerHTML = `<div class="num">${i+1}</div><div class="txt">${t}</div>`; box.appendChild(row);
+		});
 	}
 
-	// ————— Events —————
-	document.getElementById('nextPhaseBtn').onclick=nextPhase;
-	document.getElementById('endTurnBtn').onclick=endTurn;
-	document.getElementById('newGameBtn').onclick=setup;
-	document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{G.activeTab=b.dataset.tab; renderHand();});
+	// ---------- Events ----------
+	$('#nextBtn').onclick=next;
+	$('#endBtn').onclick=endTurn;
+	document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{G.tab=b.dataset.tab; renderHand();});
 
-	// Init
+	// ---------- Start ----------
 	setup();
 })();
 </script>
