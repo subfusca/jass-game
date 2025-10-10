@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Whack-a-Mole</title>
+	<meta name="description" content="Simple single‑player Whack‑a‑Mole game" />
+	<style>
+		:root {
+			--bg: #0f172a;
+			--panel: #1e293b;
+			--cell: #0b1220;
+			--cell-active: #10b98122;
+			--text: #e2e8f0;
+			--muted: #94a3b8;
+			--primary: #22c55e;
+			--primaryText: #052e16;
+			--border: #0f172a;
+		}
+		* { box-sizing: border-box; }
+		html, body {
+			height: 100%;
+			margin: 0;
+			font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+			background: var(--bg);
+			color: var(--text);
+		}
+		.container {
+			min-height: 100%;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 16px;
+			padding: 16px;
+		}
+		h1 {
+			margin: 8px 0 0 0;
+			font-size: 28px;
+			font-weight: 700;
+		}
+		.hud {
+			display: flex;
+			gap: 24px;
+			align-items: center;
+		}
+		.hud .item {
+			font-size: 18px;
+			font-weight: 600;
+			color: var(--muted);
+		}
+		.grid {
+			margin-top: 12px;
+			width: min(92vw, 340px);
+			aspect-ratio: 1 / 1;
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			grid-template-rows: repeat(3, 1fr);
+			border-radius: 16px;
+			overflow: hidden;
+			background: var(--panel);
+			touch-action: manipulation;
+			user-select: none;
+			-webkit-tap-highlight-color: transparent;
+		}
+		.cell {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: var(--cell);
+			border: 1px solid var(--border);
+			cursor: pointer;
+			transition: background 120ms, transform 60ms, opacity 60ms;
+		}
+		.cell:active { transform: scale(0.98); opacity: 0.85; }
+		.cell.active { background: var(--cell-active); }
+		.mole { font-size: clamp(28px, 8vw, 40px); line-height: 1; }
+		.actions {
+			margin-top: 16px;
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			flex-wrap: wrap;
+			justify-content: center;
+		}
+		button.primary {
+			background: var(--primary);
+			color: var(--primaryText);
+			border: none;
+			border-radius: 999px;
+			padding: 12px 20px;
+			font-weight: 800;
+			font-size: 18px;
+			letter-spacing: 0.5px;
+			cursor: pointer;
+		}
+		button.ghost {
+			background: transparent;
+			color: var(--muted);
+			border: 1px solid #233047;
+			border-radius: 999px;
+			padding: 10px 16px;
+			font-weight: 700;
+			font-size: 14px;
+			cursor: pointer;
+		}
+		.result {
+			margin-top: 8px;
+			font-size: 18px;
+			font-weight: 600;
+		}
+		.footer {
+			margin-top: auto;
+			color: #77849e;
+			font-size: 12px;
+			opacity: 0.9;
+			text-align: center;
+		}
+		a { color: #7dd3fc; }
+		/* Reduce motion preference */
+		@media (prefers-reduced-motion: reduce) {
+			.cell { transition: none; }
+		}
+	</style>
+</head>
+<body>
+	<main class="container" role="main">
+		<h1>Whack‑a‑Mole</h1>
+
+		<div class="hud" aria-live="polite">
+			<div class="item" id="time">Time: 30s</div>
+			<div class="item" id="score">Score: 0</div>
+		</div>
+
+		<section class="grid" id="grid" aria-label="Game board" role="grid">
+			<!-- 9 cells -->
+			<button class="cell" role="gridcell" aria-label="Cell 1"></button>
+			<button class="cell" role="gridcell" aria-label="Cell 2"></button>
+			<button class="cell" role="gridcell" aria-label="Cell 3"></button>
+			<button class="cell" role="gridcell" aria-label="Cell 4"></button>
+			<button class="cell" role="gridcell" aria-label="Cell 5"></button>
+			<button class="cell" role="gridcell" aria-label="Cell 6"></button>
+			<button class="cell" role="gridcell" aria-label="Cell 7"></button>
+			<button class="cell" role="gridcell" aria-label="Cell 8"></button>
+			<button class="cell" role="gridcell" aria-label="Cell 9"></button>
+		</section>
+
+		<div class="actions">
+			<button id="startStop" class="primary" aria-pressed="false">Start</button>
+			<button id="reset" class="ghost" aria-disabled="true" disabled>Reset</button>
+		</div>
+
+		<div class="result" id="result" aria-live="polite"></div>
+
+		<div class="footer">
+			<p>Tap the mole 🐹 as it appears. Works on desktop and mobile. No installs.</p>
+		</div>
+	</main>
+
+	<script>
+		(function () {
+			'use strict';
+
+			const GRID_SIZE = 3;                 // 3x3
+			const GAME_DURATION_MS = 30_000;    // 30 seconds
+			const MOLE_VISIBLE_MS = 800;        // mole visibility
+			const RESPAWN_DELAY_MS = 120;       // delay before next spawn
+			const TICK_MS = 1000;               // timer tick
+
+			const grid = document.getElementById('grid');
+			const cells = Array.from(grid.querySelectorAll('.cell'));
+			const startStopBtn = document.getElementById('startStop');
+			const resetBtn = document.getElementById('reset');
+			const timeEl = document.getElementById('time');
+			const scoreEl = document.getElementById('score');
+			const resultEl = document.getElementById('result');
+
+			let isPlaying = false;
+			let score = 0;
+			let timeRemainingMs = GAME_DURATION_MS;
+			let activeIndex = null;
+
+			let timerId = null;
+			let hideMoleId = null;
+			let nextSpawnId = null;
+
+			function updateHud() {
+				const secondsLeft = Math.max(0, Math.ceil(timeRemainingMs / 1000));
+				timeEl.textContent = 'Time: ' + secondsLeft + 's';
+				scoreEl.textContent = 'Score: ' + score;
+			}
+
+			function clearTimers() {
+				if (timerId) clearInterval(timerId), timerId = null;
+				if (hideMoleId) clearTimeout(hideMoleId), hideMoleId = null;
+				if (nextSpawnId) clearTimeout(nextSpawnId), nextSpawnId = null;
+			}
+
+			function despawnMole() {
+				if (activeIndex !== null) {
+					const c = cells[activeIndex];
+					c.classList.remove('active');
+					c.innerHTML = '';
+					c.setAttribute('aria-label', 'Cell ' + (activeIndex + 1));
+				}
+				activeIndex = null;
+			}
+
+			function spawnMole() {
+				const available = cells.map((_, i) => i).filter(i => i !== activeIndex);
+				const next = available[Math.floor(Math.random() * available.length)];
+				despawnMole();
+				activeIndex = next;
+				const cell = cells[activeIndex];
+				cell.classList.add('active');
+				cell.innerHTML = '<span class=\"mole\" aria-hidden=\"true\">🐹</span>';
+				cell.setAttribute('aria-label', 'Mole at cell ' + (activeIndex + 1));
+
+				hideMoleId = setTimeout(() => {
+					despawnMole();
+					nextSpawnId = setTimeout(spawnMole, RESPAWN_DELAY_MS);
+				}, MOLE_VISIBLE_MS);
+			}
+
+			function endGame() {
+				isPlaying = false;
+				startStopBtn.textContent = 'Start';
+				startStopBtn.setAttribute('aria-pressed', 'false');
+				resetBtn.disabled = false;
+				resetBtn.setAttribute('aria-disabled', 'false');
+				clearTimers();
+				despawnMole();
+				resultEl.textContent = 'Final Score: ' + score;
+			}
+
+			function startGame() {
+				isPlaying = true;
+				score = 0;
+				timeRemainingMs = GAME_DURATION_MS;
+				resultEl.textContent = '';
+				updateHud();
+
+				startStopBtn.textContent = 'Stop';
+				startStopBtn.setAttribute('aria-pressed', 'true');
+				resetBtn.disabled = true;
+				resetBtn.setAttribute('aria-disabled', 'true');
+
+				timerId = setInterval(() => {
+					timeRemainingMs -= TICK_MS;
+					if (timeRemainingMs <= 0) {
+						timeRemainingMs = 0;
+						updateHud();
+						endGame();
+					} else {
+						updateHud();
+					}
+				}, TICK_MS);
+
+				spawnMole();
+			}
+
+			function resetGame() {
+				clearTimers();
+				despawnMole();
+				isPlaying = false;
+				score = 0;
+				timeRemainingMs = GAME_DURATION_MS;
+				startStopBtn.textContent = 'Start';
+				startStopBtn.setAttribute('aria-pressed', 'false');
+				resetBtn.disabled = true;
+				resetBtn.setAttribute('aria-disabled', 'true');
+				resultEl.textContent = '';
+				updateHud();
+			}
+
+			// Input handlers
+			cells.forEach((cell, index) => {
+				const fire = () => {
+					if (!isPlaying) return;
+					if (index === activeIndex) {
+						score += 1;
+						updateHud();
+						if (hideMoleId) clearTimeout(hideMoleId), hideMoleId = null;
+						despawnMole();
+						nextSpawnId = setTimeout(spawnMole, RESPAWN_DELAY_MS);
+					}
+				};
+				cell.addEventListener('click', fire, { passive: true });
+				cell.addEventListener('touchend', fire, { passive: true });
+				// Keyboard support
+				cell.addEventListener('keydown', (e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						fire();
+					}
+				});
+			});
+
+			startStopBtn.addEventListener('click', () => {
+				if (isPlaying) endGame();
+				else startGame();
+			});
+
+			resetBtn.addEventListener('click', resetGame);
+
+			// Init
+			updateHud();
+
+			// Cleanup if the page unloads
+			window.addEventListener('beforeunload', clearTimers);
+		})();
+	</script>
+</body>
+</html>
