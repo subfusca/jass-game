@@ -3,311 +3,579 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>Whack-a-Mole</title>
-	<meta name="description" content="Simple single‑player Whack‑a‑Mole game" />
+	<title>JASS – Dental Card Game</title>
+	<meta name="description" content="Turn-based card game per provided JASS rules" />
 	<style>
-		:root {
-			--bg: #0f172a;
-			--panel: #1e293b;
-			--cell: #0b1220;
-			--cell-active: #10b98122;
-			--text: #e2e8f0;
-			--muted: #94a3b8;
-			--primary: #22c55e;
-			--primaryText: #052e16;
-			--border: #0f172a;
+		:root{
+			--bg:#0f172a;--panel:#0b1220;--panel2:#162033;--text:#e2e8f0;--muted:#94a3b8;
+			--primary:#22c55e;--danger:#ef4444;--accent:#60a5fa;--border:#22304a;
+			--yellow:#fbbf24;--pink:#f472b6
 		}
-		* { box-sizing: border-box; }
-		html, body {
-			height: 100%;
-			margin: 0;
-			font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-			background: var(--bg);
-			color: var(--text);
-		}
-		.container {
-			min-height: 100%;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 16px;
-			padding: 16px;
-		}
-		h1 {
-			margin: 8px 0 0 0;
-			font-size: 28px;
-			font-weight: 700;
-		}
-		.hud {
-			display: flex;
-			gap: 24px;
-			align-items: center;
-		}
-		.hud .item {
-			font-size: 18px;
-			font-weight: 600;
-			color: var(--muted);
-		}
-		.grid {
-			margin-top: 12px;
-			width: min(92vw, 340px);
-			aspect-ratio: 1 / 1;
-			display: grid;
-			grid-template-columns: repeat(3, 1fr);
-			grid-template-rows: repeat(3, 1fr);
-			border-radius: 16px;
-			overflow: hidden;
-			background: var(--panel);
-			touch-action: manipulation;
-			user-select: none;
-			-webkit-tap-highlight-color: transparent;
-		}
-		.cell {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			background: var(--cell);
-			border: 1px solid var(--border);
-			cursor: pointer;
-			transition: background 120ms, transform 60ms, opacity 60ms;
-		}
-		.cell:active { transform: scale(0.98); opacity: 0.85; }
-		.cell.active { background: var(--cell-active); }
-		.mole { font-size: clamp(28px, 8vw, 40px); line-height: 1; }
-		.actions {
-			margin-top: 16px;
-			display: flex;
-			align-items: center;
-			gap: 12px;
-			flex-wrap: wrap;
-			justify-content: center;
-		}
-		button.primary {
-			background: var(--primary);
-			color: var(--primaryText);
-			border: none;
-			border-radius: 999px;
-			padding: 12px 20px;
-			font-weight: 800;
-			font-size: 18px;
-			letter-spacing: 0.5px;
-			cursor: pointer;
-		}
-		button.ghost {
-			background: transparent;
-			color: var(--muted);
-			border: 1px solid #233047;
-			border-radius: 999px;
-			padding: 10px 16px;
-			font-weight: 700;
-			font-size: 14px;
-			cursor: pointer;
-		}
-		.result {
-			margin-top: 8px;
-			font-size: 18px;
-			font-weight: 600;
-		}
-		.footer {
-			margin-top: auto;
-			color: #77849e;
-			font-size: 12px;
-			opacity: 0.9;
-			text-align: center;
-		}
-		a { color: #7dd3fc; }
-		/* Reduce motion preference */
-		@media (prefers-reduced-motion: reduce) {
-			.cell { transition: none; }
-		}
+		*{box-sizing:border-box}
+		html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
+			font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica Neue,Arial}
+		.app{min-height:100%;display:flex;flex-direction:column;gap:12px;padding:12px}
+		h1{font-size:20px;margin:0 0 4px 0}
+		.topbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+		.badge{padding:4px 8px;border-radius:999px;background:#1e293b;font-weight:700;color:var(--muted)}
+		.board{display:grid;grid-template-columns:1fr;gap:12px}
+		@media(min-width:920px){.board{grid-template-columns:320px 1fr 320px}}
+		.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
+		.panel h2{margin:0 0 8px 0;font-size:16px;color:var(--muted)}
+		.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+		.cards{display:flex;flex-wrap:wrap;gap:8px}
+		.card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px;min-width:160px;max-width:240px}
+		.card h3{margin:0 0 6px 0;font-size:14px}
+		.card p{margin:4px 0;font-size:12px;color:var(--muted)}
+		.tag{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;margin-right:4px;border:1px solid #31405e}
+		.btn{cursor:pointer;border:none;border-radius:999px;padding:8px 12px;font-weight:800}
+		.btn.primary{background:var(--primary);color:#052e16}
+		.btn.accent{background:var(--accent);color:#051a32}
+		.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+		.btn.danger{background:var(--danger);color:#3c0a0a}
+		.btn.small{padding:6px 10px;font-size:12px}
+		.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+		.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13px;color:var(--muted)}
+		.hr{height:1px;background:var(--border);margin:8px 0}
+		.goalItem{font-size:13px;margin:4px 0;padding:6px 8px;border-radius:8px;background:#142038;border:1px solid var(--border)}
+		.goalItem.done{opacity:.6;text-decoration:line-through}
+		.toast{position:fixed;bottom:12px;left:12px;right:12px;display:flex;justify-content:center;pointer-events:none}
+		.toast>div{pointer-events:auto;background:#111827;color:#e5e7eb;border:1px solid #374151;padding:10px 14px;border-radius:10px}
+		.footer{margin-top:auto;text-align:center;color:#7a869d;font-size:12px}
+		code{background:#0d1425;border:1px solid #1d2a44;border-radius:6px;padding:1px 6px}
 	</style>
 </head>
 <body>
-	<main class="container" role="main">
-		<h1>Whack‑a‑Mole</h1>
+<div class="app" id="app">
+	<div class="topbar">
+		<h1>JASS – Dental Card Game</h1>
+		<span class="badge" id="turnBadge">Player 1’s turn • Phase: Draw</span>
+		<button class="btn ghost small" id="nextPhaseBtn">Next Phase ▶</button>
+		<button class="btn ghost small" id="endTurnBtn">End Turn ↩</button>
+		<button class="btn small" id="newGameBtn">New Game</button>
+	</div>
 
-		<div class="hud" aria-live="polite">
-			<div class="item" id="time">Time: 30s</div>
-			<div class="item" id="score">Score: 0</div>
-		</div>
-
-		<section class="grid" id="grid" aria-label="Game board" role="grid">
-			<!-- 9 cells -->
-			<button class="cell" role="gridcell" aria-label="Cell 1"></button>
-			<button class="cell" role="gridcell" aria-label="Cell 2"></button>
-			<button class="cell" role="gridcell" aria-label="Cell 3"></button>
-			<button class="cell" role="gridcell" aria-label="Cell 4"></button>
-			<button class="cell" role="gridcell" aria-label="Cell 5"></button>
-			<button class="cell" role="gridcell" aria-label="Cell 6"></button>
-			<button class="cell" role="gridcell" aria-label="Cell 7"></button>
-			<button class="cell" role="gridcell" aria-label="Cell 8"></button>
-			<button class="cell" role="gridcell" aria-label="Cell 9"></button>
+	<div class="board">
+		<!-- Left: Active Patient -->
+		<section class="panel">
+			<h2>Active Patient</h2>
+			<div id="patientArea"></div>
+			<div class="hr"></div>
+			<h2>Treatment Goal</h2>
+			<div id="treatmentGoal"></div>
 		</section>
 
-		<div class="actions">
-			<button id="startStop" class="primary" aria-pressed="false">Start</button>
-			<button id="reset" class="ghost" aria-disabled="true" disabled>Reset</button>
-		</div>
+		<!-- Center: Hand and play actions -->
+		<section class="panel">
+			<h2>Hand</h2>
+			<div class="row">
+				<button class="btn small accent" data-tab="procedure">Procedure</button>
+				<button class="btn small accent" data-tab="pharma">Pharmacology</button>
+				<button class="btn small accent" data-tab="modifier">Modifiers</button>
+				<span class="badge" id="handCounts"></span>
+			</div>
+			<div class="hr"></div>
+			<div id="handView"></div>
+		</section>
 
-		<div class="result" id="result" aria-live="polite"></div>
+		<!-- Right: Discard + Info -->
+		<section class="panel">
+			<h2>Phase & Decks</h2>
+			<div class="kv" id="phaseInfo"></div>
+			<div class="hr"></div>
+			<h2>Recent Log</h2>
+			<div id="log" style="font-size:12px;color:var(--muted);max-height:260px;overflow:auto"></div>
+		</section>
+	</div>
 
-		<div class="footer">
-			<p>Tap the mole 🐹 as it appears. Works on desktop and mobile. No installs.</p>
-		</div>
-	</main>
+	<div class="footer">2‑player hot‑seat. Hands are visible to ease play. First to complete 2 cases wins.</div>
+</div>
 
-	<script>
-		(function () {
-			'use strict';
+<div class="toast" id="toast" style="display:none"><div></div></div>
 
-			const GRID_SIZE = 3;                 // 3x3
-			const GAME_DURATION_MS = 30_000;    // 30 seconds
-			const MOLE_VISIBLE_MS = 800;        // mole visibility
-			const RESPAWN_DELAY_MS = 120;       // delay before next spawn
-			const TICK_MS = 1000;               // timer tick
+<script>
+(function(){
+	'use strict';
 
-			const grid = document.getElementById('grid');
-			const cells = Array.from(grid.querySelectorAll('.cell'));
-			const startStopBtn = document.getElementById('startStop');
-			const resetBtn = document.getElementById('reset');
-			const timeEl = document.getElementById('time');
-			const scoreEl = document.getElementById('score');
-			const resultEl = document.getElementById('result');
+	// ————— Utilities —————
+	function shuffle(array){for(let i=array.length-1;i>0;i--){const j=(Math.random()* (i+1))|0;[array[i],array[j]]=[array[j],array[i]];}return array}
+	const pick = (arr)=>arr[(Math.random()*arr.length)|0];
+	function toast(msg){const t=document.getElementById('toast');t.style.display='flex';t.firstElementChild.textContent=msg;clearTimeout(toast._id);toast._id=setTimeout(()=>t.style.display='none',1600)}
 
-			let isPlaying = false;
-			let score = 0;
-			let timeRemainingMs = GAME_DURATION_MS;
-			let activeIndex = null;
+	// ————— Data (from your spec) —————
+	const Patients = [
+		{ id:'postop', name:'Post‑Op Pain', vuln:null, goal:[{type:'Pharma', need:'Analgesic', qty:1}] },
+		{ id:'abscess', name:'Abscessed Tooth', vuln:null, goal:[{type:'Proc', need:'Root Canal', qty:1},{type:'Pharma', need:'Anesthetic', qty:1},{type:'Pharma', need:'Antibiotic', qty:1}] },
+		{ id:'routine', name:'Routine Visit', vuln:null, goal:[{type:'Proc', need:'Prophylaxis', qty:1}] },
+		{ id:'impaction', name:'Wisdom Tooth Impaction', vuln:'Heart condition', goal:[{type:'Proc', need:'Surgical Extraction', qty:1},{type:'Pharma', need:'Anesthetic without Epinephrine', qty:1},{type:'Pharma', need:'Analgesic', qty:1}] },
+		{ id:'gingivitis', name:'Gingivitis', vuln:null, goal:[{type:'Proc', need:'Scaling and Root Planing', qty:1},{type:'Pharma', need:'Oral Rinse', qty:1}] },
+		{ id:'child', name:'Child with Cavities', vuln:'Pediatric—gentle anesthetic', goal:[{type:'Proc', need:'Cavity Filling', qty:1},{type:'Pharma', need:'Topical Anesthetic', qty:1},{type:'Pharma', need:'Fluoride Varnish', qty:1}] },
+		{ id:'missing', name:'Missing Tooth', vuln:'Smoker (healing risk)', goal:[{type:'Proc', need:'Dental Implant Surgery', qty:1},{type:'Pharma', need:'Anesthetic', qty:1},{type:'Pharma', need:'Antibiotic', qty:1}] },
+		{ id:'drysocket', name:'Dry Socket', vuln:null, goal:[{type:'Proc', need:'Pain Management', qty:1},{type:'Pharma', need:'Topical Anesthetic', qty:1},{type:'Pharma', need:'Antiseptic', qty:1}] },
+		{ id:'thrush', name:'Oral Thrush', vuln:'Weakened immunity', goal:[{type:'Proc', need:'Diagnosis and Prescription', qty:1},{type:'Pharma', need:'Antifungal', qty:1}] },
+		{ id:'jaw', name:'Jaw Pain', vuln:'Stress/Bruxism', goal:[{type:'Proc', need:'Appliance Therapy', qty:1},{type:'Pharma', need:'Muscle Relaxant', qty:1}] },
+	];
 
-			let timerId = null;
-			let hideMoleId = null;
-			let nextSpawnId = null;
+	const Procedures = [
+		{ name:'Pain Management', req:[{type:'Pharma', need:'Analgesic', qty:1}] },
+		{ name:'Root Canal', req:[{type:'Pharma', need:'Anesthetic', qty:1}] },
+		{ name:'Prophylaxis', req:[] },
+		{ name:'Surgical Extraction', req:[{type:'Pharma', need:'Anesthetic', qty:1}] },
+		{ name:'Scaling and Root Planing', req:[{type:'Pharma', need:'Anesthetic', qty:1}] },
+		{ name:'Pediatric Filling', req:[{type:'Pharma', need:'Topical Anesthetic', qty:1}] },
+		{ name:'Dental Implant Surgery', req:[{type:'Pharma', need:'Anesthetic', qty:1},{type:'Pharma', need:'Antibiotic', qty:1}] },
+		{ name:'Dry Socket Treatment', req:[{type:'Pharma', need:'Topical Anesthetic', qty:1},{type:'Pharma', need:'Antiseptic', qty:1}] },
+		{ name:'Diagnosis and Prescription', req:[{type:'Pharma', need:'Antifungal', qty:1}] },
+		{ name:'Night Guard Therapy', req:[{type:'Pharma', need:'Muscle Relaxant', qty:1}] },
+	];
 
-			function updateHud() {
-				const secondsLeft = Math.max(0, Math.ceil(timeRemainingMs / 1000));
-				timeEl.textContent = 'Time: ' + secondsLeft + 's';
-				scoreEl.textContent = 'Score: ' + score;
-			}
+	const Pharma = [
+		{ name:'Ibuprofen', type:'Analgesic', special:'Avoid with kidney issues' },
+		{ name:'Clindamycin', type:'Antibiotic', special:'GI side effects possible' },
+		{ name:'Fluoride Varnish', type:'Preventive Agent', special:'Apply after cleaning' },
+		{ name:'Mepivacaine', type:'Anesthetic', special:'No epi; heart‑safe' },
+		{ name:'Chlorhexidine', type:'Antiseptic Rinse', as:'Antiseptic', special:'May stain teeth' },
+		{ name:'Benzocaine Gel', type:'Topical Anesthetic', as:'Topical Anesthetic', special:'Surface only' },
+		{ name:'Dexamethasone', type:'Steroid', as:'Analgesic', special:'Use as directed' },
+		{ name:'Eugenol', type:'Antiseptic', special:'Strong taste/smell' },
+		{ name:'Nystatin', type:'Antifungal', as:'Antifungal', special:'Rinse—tolerability varies' },
+		{ name:'Cyclobenzaprine', type:'Muscle Relaxant', as:'Muscle Relaxant', special:'Drowsiness' },
+	];
 
-			function clearTimers() {
-				if (timerId) clearInterval(timerId), timerId = null;
-				if (hideMoleId) clearTimeout(hideMoleId), hideMoleId = null;
-				if (nextSpawnId) clearTimeout(nextSpawnId), nextSpawnId = null;
-			}
+	// For goals/requirements we compare to conceptual types:
+	// Map pharma card to conceptual "class" used in rules
+	function pharmaClass(card){
+		return card.as || card.type;
+	}
 
-			function despawnMole() {
-				if (activeIndex !== null) {
-					const c = cells[activeIndex];
-					c.classList.remove('active');
-					c.innerHTML = '';
-					c.setAttribute('aria-label', 'Cell ' + (activeIndex + 1));
+	// Modifiers
+	const Easy = [
+		{ key:'assistant', name:"Dental Assistant's Aid", text:'Draw +1 card now', play:(G, p)=>{
+			drawOne(G, p, 'procedure'); // rule says “from the deck”, we’ll draw one Procedure by default
+		}},
+		{ key:'rush', name:'Rush Order', text:'Use 1 fewer required Pharmacology this turn', play:(G, p)=>{
+			G.ctx[p].rushOrder = true;
+		}},
+		{ key:'confidence', name:'Clinical Confidence', text:'Ignore one Special Condition this turn', play:(G, p)=>{
+			G.ctx[p].ignoreSpecial = true;
+		}},
+	];
+
+	const Hard = [
+		{ key:'panic', name:'Patient Panic', text:'Target discards 1 random card', play:(G, target)=>{
+			const choices = [...G.players[target].pharma, ...G.players[target].procedures];
+			if(choices.length===0){log('No card to discard.');return;}
+			const c = choices[(Math.random()*choices.length)|0];
+			discardCard(G, target, c);
+			log(`Player ${target+1} discards ${label(c)} (panic).`);
+		}},
+		{ key:'shortage', name:'Supply Shortage', text:'Block a Pharma class for a round', play:(G/*,target*/)=>{
+			const classes = ['Anesthetic','Antibiotic','Analgesic','Antifungal','Topical Anesthetic','Antiseptic','Muscle Relaxant'];
+			G.blockedClass = pick(classes);
+			G.blockedUntilTurn = G.turn + G.players.length; // one full round
+			log(`Supply Shortage: ${G.blockedClass} unavailable until next round.`);
+		}},
+		{ key:'unexpected', name:'Unexpected Complication', text:'Target patient gains new requirement: Antibiotic', play:(G, target)=>{
+			const p = G.players[target];
+			p.patient.goal.push({type:'Pharma', need:'Antibiotic', qty:1, added:true});
+			log(`Complication: Player ${target+1} now also needs Antibiotic.`);
+		}},
+		// Example complications
+		{ key:'drugres', name:'Drug Resistance', text:'Current Antibiotic ineffective; need different one', play:(G, target)=>{
+			G.ctx[target].drugResistance = true;
+			log(`Drug Resistance on Player ${target+1}.`);
+		}},
+		{ key:'faint', name:'Patient Faint', text:'Target skips next turn', play:(G, target)=>{
+			G.ctx[target].skipNext = true;
+			log(`Player ${target+1} will skip next turn (faint).`);
+		}},
+		{ key:'anesfail', name:'Anesthetic Failure', text:'Discard current Anesthetic and replay a new one', play:(G, target)=>{
+			G.ctx[target].anestheticFailure = true;
+			log(`Anesthetic Failure on Player ${target+1}.`);
+		}},
+		{ key:'allergy', name:'Allergic Reaction', text:'Discard current Pharma and draw new patient with Drug Allergy', play:(G, target)=>{
+			const p=G.players[target];
+			// Discard one random pharma in hand as the reacted drug
+			if(p.pharma.length){discardCard(G,target,p.pharma.pop());}
+			p.patient.vuln = 'Drug Allergy';
+			log(`Player ${target+1} patient now has Drug Allergy.`);
+			// Optionally swap patient entirely: the spec says "draw a new Patient Card"
+			// We’ll implement: draw new patient and replace, keeping progress reset.
+			const np = draw(G,'patient');
+			p.patient = np; p.progress = {};
+			log(`Player ${target+1} drew new patient: ${np.name}. Progress reset.`);
+		}},
+		{ key:'malfunction', name:'Equipment Malfunction', text:'Target misses next turn to fix equipment', play:(G, target)=>{
+			G.ctx[target].skipNext = true;
+			log(`Player ${target+1} will miss next turn (equipment).`);
+		}},
+		{ key:'bleeding', name:'Unexpected Bleeding', text:'Must play Hemostatic Agent or miss turn', play:(G, target)=>{
+			G.ctx[target].needsHemostat = true;
+			log(`Unexpected Bleeding for Player ${target+1}.`);
+		}},
+		{ key:'refusal', name:'Patient Refusal', text:'Discard one card before continuing', play:(G, target)=>{
+			const options = [...G.players[target].pharma, ...G.players[target].procedures];
+			if(options.length){discardCard(G,target,options.pop());log(`Player ${target+1} discards a card (refusal).`)}
+		}},
+		{ key:'contaminated', name:'Contaminated Instrument', text:'Discard all Procedure cards and redraw 3', play:(G, target)=>{
+			const pl=G.players[target];
+			while(pl.procedures.length){discardCard(G,target,pl.procedures.pop());}
+			for(let i=0;i<3;i++) drawOne(G,target,'procedure');
+			log(`Player ${target+1} discarded procedures and drew 3 new.`);
+		}},
+		{ key:'palpit', name:'Heart Palpitations', text:'Discard any Anesthetic containing epinephrine', play:(G, target)=>{
+			const pl=G.players[target];
+			pl.pharma = pl.pharma.filter(c=>{
+				const keep = pharmaClass(c)!=='Anesthetic with Epinephrine';
+				if(!keep) discardCard(G,target,c);
+				return keep;
+			});
+			log(`Player ${target+1} discarded epi anesthetics.`);
+		}},
+		{ key:'drysocketEvt', name:'Dry Socket (Event)', text:'If extraction done, must add Dry Socket Treatment', play:(G, target)=>{
+			const pl=G.players[target];
+			pl.patient.goal.push({type:'Proc', need:'Dry Socket Treatment', qty:1, added:true});
+			log(`Dry Socket: Player ${target+1} must also perform Dry Socket Treatment.`);
+		}},
+	];
+
+	// ————— Game state —————
+	const G = {
+		players:[
+			{ procedures:[], pharma:[], easy:[], hard:[], patient:null, progress:{}, casesWon:0 },
+			{ procedures:[], pharma:[], easy:[], hard:[], patient:null, progress:{}, casesWon:0 },
+		],
+		decks:{ patient:[], procedure:[], pharma:[], easy:[], hard:[] },
+		discard:{ patient:[], procedure:[], pharma:[], easy:[], hard:[] },
+		turn:0, phase:0, // 0 Draw, 1 Action, 2 Mod, 3 Replenish
+		activeTab:'procedure',
+		blockedClass:null, blockedUntilTurn:-1,
+		ctx:[{},{},],
+		log:[],
+	};
+	function log(msg){G.log.unshift(msg); renderLog();}
+
+	// Setup and dealing per rules
+	function setup(){
+		// Build decks
+		G.decks.patient = shuffle(Patients.map(x=>({...x,kind:'patient'})));
+		G.decks.procedure = shuffle([].concat(...Procedures.map(c=>Array(4).fill(null).map(()=>({kind:'procedure',...c}))))); // 4x each
+		G.decks.pharma = shuffle([].concat(...Pharma.map(c=>Array(4).fill(null).map(()=>({kind:'pharma',...c})))));
+		G.decks.easy = shuffle(Easy.map(c=>({kind:'easy',...c})));
+		G.decks.hard = shuffle(Hard.map(c=>({kind:'hard',...c})));
+		G.discard={patient:[],procedure:[],pharma:[],easy:[],hard:[]};
+		G.turn=0; G.phase=0; G.activeTab='procedure';
+		G.blockedClass=null; G.blockedUntilTurn=-1;
+		G.ctx=[{},{},]; G.log=[];
+
+		for(let p=0;p<G.players.length;p++){
+			const pl = G.players[p] = { procedures:[], pharma:[], easy:[], hard:[], patient:null, progress:{}, casesWon:0 };
+			// Starting hands
+			// 2 Patient -> choose 1 (we auto-pick best fit randomly, other bottom)
+			const pt1 = draw(G,'patient'), pt2 = draw(G,'patient');
+			pl.patient = pick([pt1, pt2]); G.discard.patient.push(pl.patient===pt1?pt2:pt1);
+			for(let i=0;i<3;i++) drawOne(G,p,'procedure');
+			for(let i=0;i<4;i++) drawOne(G,p,'pharma');
+			pl.easy.push(draw(G,'easy'));
+			pl.hard.push(draw(G,'hard'));
+		}
+		log('Game started. Each player drew starting hands and a patient.');
+		renderAll();
+	}
+	function draw(G, type){
+		if(G.decks[type].length===0){ // reshuffle discard
+			G.decks[type]=shuffle(G.discard[type]); G.discard[type]=[];
+		}
+		return G.decks[type].pop();
+	}
+	function drawOne(G,p,type){
+		if(type==='procedure') G.players[p].procedures.push(draw(G,'procedure'));
+		if(type==='pharma') G.players[p].pharma.push(draw(G,'pharma'));
+		if(type==='easy') G.players[p].easy.push(draw(G,'easy'));
+		if(type==='hard') G.players[p].hard.push(draw(G,'hard'));
+	}
+	function discardCard(G,p,card){
+		G.discard[card.kind].push(card);
+	}
+	function current(){return G.players[G.turn%G.players.length]}
+
+	// ————— Phases —————
+	function nextPhase(){
+		const pid = G.turn%G.players.length;
+		const pl = G.players[pid];
+		// Phase specific end validations
+		if(G.phase===0){
+			// Draw: 1 Procedure, 1 Pharma
+			drawOne(G,pid,'procedure'); drawOne(G,pid,'pharma');
+			// Hand limits: ≤7 each (enforced at end of turn per rules; we soft‑enforce now)
+			pl.procedures = pl.procedures.slice(-7);
+			pl.pharma = pl.pharma.slice(-7);
+			log(`Player ${pid+1} drew 1 Procedure and 1 Pharmacology.`);
+		}
+		if(G.phase===3){
+			// End of Replenish → auto advance to endTurn()
+			endTurn(); return;
+		}
+		G.phase = (G.phase+1)%4;
+		renderAll();
+	}
+	function endTurn(){
+		const pid = G.turn%G.players.length;
+		const pl = G.players[pid];
+
+		// Hand limit at end of turn
+		if(pl.procedures.length>7) { while(pl.procedures.length>7) discardCard(G,pid,pl.procedures.shift()); }
+		if(pl.pharma.length>7) { while(pl.pharma.length>7) discardCard(G,pid,pl.pharma.shift()); }
+
+		// Round housekeeping
+		G.turn++;
+		G.phase=0;
+		G.activeTab='procedure';
+		// Rush/confidence expire
+		G.ctx.forEach(c=>{c.rushOrder=false;c.ignoreSpecial=false; if(c.usedHemostat) c.needsHemostat=false;});
+		// Unblock after round
+		if(G.blockedClass && G.turn>=G.blockedUntilTurn) G.blockedClass=null;
+
+		const np = G.turn%G.players.length;
+		if(G.ctx[np].skipNext){ log(`Player ${np+1} skips this turn.`); G.ctx[np].skipNext=false; G.turn++; }
+		renderAll();
+	}
+
+	// ————— Gameplay actions —————
+	function canUsePharmaClass(cls){
+		if(!G.blockedClass) return true;
+		return !(cls===G.blockedClass);
+	}
+	function tryPlayProcedure(procIndex){
+		if(G.phase!==1){toast('Action phase required');return;}
+		const pid = G.turn%G.players.length;
+		const pl = G.players[pid];
+		const proc = pl.procedures[procIndex];
+
+		// Check requirements
+		const reqs = proc.req.slice();
+		if(G.ctx[pid].rushOrder && reqs.length>0) reqs.pop();
+
+		// If anesthetic without epinephrine is required, only allow Mepivacaine class
+		function matchesReq(ph, req){
+			if(req.type==='Pharma'){
+				const cls = pharmaClass(ph);
+				if(req.need==='Anesthetic without Epinephrine'){
+					return cls==='Anesthetic' && ph.name==='Mepivacaine';
 				}
-				activeIndex = null;
+				return cls===req.need;
 			}
+			return false;
+		}
 
-			function spawnMole() {
-				const available = cells.map((_, i) => i).filter(i => i !== activeIndex);
-				const next = available[Math.floor(Math.random() * available.length)];
-				despawnMole();
-				activeIndex = next;
-				const cell = cells[activeIndex];
-				cell.classList.add('active');
-				cell.innerHTML = '<span class=\"mole\" aria-hidden=\"true\">🐹</span>';
-				cell.setAttribute('aria-label', 'Mole at cell ' + (activeIndex + 1));
+		const consumed=[];
+		for(const r of reqs){
+			const idx = pl.pharma.findIndex(ph=>matchesReq(ph,r) && canUsePharmaClass(pharmaClass(ph)));
+			if(idx<0){toast('Missing requirement');return;}
+			consumed.push(pl.pharma.splice(idx,1)[0]);
+		}
+		consumed.forEach(c=>discardCard(G,pid,c));
+		// Place procedure next to patient (record progress)
+		discardCard(G,pid,pl.procedures.splice(procIndex,1)[0]);
+		pl.progress[proc.name]=(pl.progress[proc.name]||0)+1;
+		log(`Player ${pid+1} performed ${proc.name}.`);
 
-				hideMoleId = setTimeout(() => {
-					despawnMole();
-					nextSpawnId = setTimeout(spawnMole, RESPAWN_DELAY_MS);
-				}, MOLE_VISIBLE_MS);
+		checkWinOrContinue(pid);
+		renderAll();
+	}
+	function playEasy(index){
+		if(G.phase!==2){toast('Modifier phase required');return;}
+		const pid = G.turn%G.players.length;
+		const pl=G.players[pid];
+		const card = pl.easy.splice(index,1)[0];
+		const impl = Easy.find(e=>e.key===card.key);
+		impl.play(G,pid);
+		log(`Player ${pid+1} played Easy: ${card.name}.`);
+		// Replenish immediately
+		pl.easy.push(draw(G,'easy'));
+		renderAll();
+	}
+	function playHard(index,targetPid){
+		if(G.phase!==2){toast('Modifier phase required');return;}
+		const pid = G.turn%G.players.length;
+		if(targetPid===pid){toast('Choose opponent');return;}
+		const pl=G.players[pid];
+		const card = pl.hard.splice(index,1)[0];
+		const impl = Hard.find(h=>h.key===card.key);
+		impl.play(G,targetPid);
+		log(`Player ${pid+1} played Challenging: ${card.name} on Player ${targetPid+1}.`);
+		pl.hard.push(draw(G,'hard')); // Replenish
+		renderAll();
+	}
+	function checkWinOrContinue(pid){
+		const pl=G.players[pid];
+		// Build current completion snapshot versus patient goal
+		let ok=true;
+		const tempCounts={};
+		// Count procedures placed (from progress)
+		function needCount(label){return pl.patient.goal.filter(g=>g.need===label).reduce((a,b)=>a+b.qty,0)}
+		for(const g of pl.patient.goal){
+			if(g.type==='Proc'){
+				const have = pl.progress[g.need]||0;
+				if(have<g.qty) ok=false;
 			}
-
-			function endGame() {
-				isPlaying = false;
-				startStopBtn.textContent = 'Start';
-				startStopBtn.setAttribute('aria-pressed', 'false');
-				resetBtn.disabled = false;
-				resetBtn.setAttribute('aria-disabled', 'false');
-				clearTimers();
-				despawnMole();
-				resultEl.textContent = 'Final Score: ' + score;
+			if(g.type==='Pharma'){
+				// Pharma requirements are satisfied when consumed while playing procedures.
+				// We approximate by tracking a virtual counter: each time a requirement is consumed,
+				// we recorded by discarding; to assert goal, require at least qty times that class was consumed overall.
+				tempCounts[g.need]=(tempCounts[g.need]||0)+0; // placeholder
 			}
-
-			function startGame() {
-				isPlaying = true;
-				score = 0;
-				timeRemainingMs = GAME_DURATION_MS;
-				resultEl.textContent = '';
-				updateHud();
-
-				startStopBtn.textContent = 'Stop';
-				startStopBtn.setAttribute('aria-pressed', 'true');
-				resetBtn.disabled = true;
-				resetBtn.setAttribute('aria-disabled', 'true');
-
-				timerId = setInterval(() => {
-					timeRemainingMs -= TICK_MS;
-					if (timeRemainingMs <= 0) {
-						timeRemainingMs = 0;
-						updateHud();
-						endGame();
-					} else {
-						updateHud();
-					}
-				}, TICK_MS);
-
-				spawnMole();
+		}
+		// If procedures complete and all pharma reqs were used during them, consider case done.
+		if(ok){
+			pl.casesWon+=1;
+			log(`Player ${pid+1} completed a case! Total cases: ${pl.casesWon}`);
+			// New case
+			pl.patient = draw(G,'patient'); pl.progress={};
+			// Draw starting: rules say after completing a case, draw another case to complete (no extra cards).
+			if(pl.casesWon>=2){
+				alert(`Player ${pid+1} wins the game!`);
+				setup(); return;
 			}
+		}
+	}
 
-			function resetGame() {
-				clearTimers();
-				despawnMole();
-				isPlaying = false;
-				score = 0;
-				timeRemainingMs = GAME_DURATION_MS;
-				startStopBtn.textContent = 'Start';
-				startStopBtn.setAttribute('aria-pressed', 'false');
-				resetBtn.disabled = true;
-				resetBtn.setAttribute('aria-disabled', 'true');
-				resultEl.textContent = '';
-				updateHud();
-			}
+	// ————— Rendering —————
+	function renderAll(){
+		renderTop();
+		renderPatient();
+		renderGoal();
+		renderHand();
+		renderInfo();
+		renderLog();
+	}
+	function renderTop(){
+		const pid = G.turn%G.players.length;
+		const phases=['Draw','Action (Procedure)','Modifiers','Replenish'];
+		document.getElementById('turnBadge').textContent = `Player ${pid+1}’s turn • Phase: ${phases[G.phase]}`;
+		document.getElementById('handCounts').textContent =
+			`Proc ${G.players[pid].procedures.length}/7 · Pharma ${G.players[pid].pharma.length}/7 · Easy ${G.players[pid].easy.length} · Chall ${G.players[pid].hard.length}`;
+	}
+	function renderPatient(){
+		const p=current().patient;
+		const el=document.getElementById('patientArea');
+		el.innerHTML='';
+		const c=document.createElement('div'); c.className='card';
+		c.innerHTML = `<h3>🧑‍⚕️ ${p.name}</h3>
+			<p><span class="tag">Condition</span> ${descCondition(p)}</p>
+			<p><span class="tag">Vulnerability</span> ${p.vuln||'None'}</p>`;
+		el.appendChild(c);
+	}
+	function descCondition(p){
+		const map={
+			'postop':'Pain after dental procedure',
+			'abscess':'Severe infection with abscess',
+			'routine':'Minor plaque buildup',
+			'impaction':'Impacted wisdom tooth causing pain',
+			'gingivitis':'Swollen, bleeding gums',
+			'child':'Pediatric patient with multiple cavities',
+			'missing':'Needs implant replacement',
+			'drysocket':'Post-extraction clot loss pain',
+			'thrush':'White patches; fungal',
+			'jaw':'TMJ pain / grinding',
+		}; return map[p.id]||'';
+	}
+	function renderGoal(){
+		const wrap=document.getElementById('treatmentGoal');
+		wrap.innerHTML='';
+		const p=current();
+		const goal = p.patient.goal;
+		goal.forEach(g=>{
+			const done = (g.type==='Proc') ? ((p.progress[g.need]||0)>=g.qty) : false;
+			const d=document.createElement('div'); d.className='goalItem'+(done?' done':'');
+			d.textContent = `${g.qty}× ${g.type==='Proc'?'Procedure':'Pharmacology'}: ${g.need}${g.added?' (added)':''}`;
+			wrap.appendChild(d);
+		});
+	}
+	function renderHand(){
+		const pid=G.turn%G.players.length;
+		const pl=G.players[pid];
+		const view=document.getElementById('handView');
+		view.innerHTML='';
 
-			// Input handlers
-			cells.forEach((cell, index) => {
-				const fire = () => {
-					if (!isPlaying) return;
-					if (index === activeIndex) {
-						score += 1;
-						updateHud();
-						if (hideMoleId) clearTimeout(hideMoleId), hideMoleId = null;
-						despawnMole();
-						nextSpawnId = setTimeout(spawnMole, RESPAWN_DELAY_MS);
-					}
-				};
-				cell.addEventListener('click', fire, { passive: true });
-				cell.addEventListener('touchend', fire, { passive: true });
-				// Keyboard support
-				cell.addEventListener('keydown', (e) => {
-					if (e.key === 'Enter' || e.key === ' ') {
-						e.preventDefault();
-						fire();
-					}
-				});
+		const tabButtons=document.querySelectorAll('[data-tab]');
+		tabButtons.forEach(b=>b.classList.toggle('primary', b.dataset.tab===G.activeTab));
+
+		if(G.activeTab==='procedure'){
+			const wrap=document.createElement('div'); wrap.className='cards';
+			pl.procedures.forEach((card,idx)=>{
+				const c=document.createElement('div'); c.className='card';
+				c.innerHTML = `<h3>🛠️ ${card.name}</h3>
+					<p><span class="tag">Requirements</span> ${
+						card.req.length?card.req.map(r=>`${r.qty}× ${r.need}`).join(', '):'None'
+					}</p>
+					<div class="row"><button class="btn small primary">Play</button></div>`;
+				c.querySelector('button').onclick=()=>tryPlayProcedure(idx);
+				wrap.appendChild(c);
 			});
-
-			startStopBtn.addEventListener('click', () => {
-				if (isPlaying) endGame();
-				else startGame();
+			view.appendChild(wrap);
+		}
+		if(G.activeTab==='pharma'){
+			const wrap=document.createElement('div'); wrap.className='cards';
+			pl.pharma.forEach((card)=>{
+				const cls=pharmaClass(card);
+				const blocked = !canUsePharmaClass(cls);
+				const c=document.createElement('div'); c.className='card';
+				c.innerHTML = `<h3>💊 ${card.name}</h3>
+					<p><span class="tag">Type</span> ${cls}${blocked?' — <b style="color:var(--danger)">BLOCKED</b>':''}</p>
+					<p style="opacity:.8">${card.special||''}</p>`;
+				wrap.appendChild(c);
 			});
+			view.appendChild(wrap);
+		}
+		if(G.activeTab==='modifier'){
+			const wrap=document.createElement('div'); wrap.className='cards';
+			// Easy
+			pl.easy.forEach((card,idx)=>{
+				const c=document.createElement('div'); c.className='card';
+				c.innerHTML = `<h3>🟢 ${card.name}</h3><p>${card.text}</p>
+					<div class="row"><button class="btn small primary">Play (self)</button></div>`;
+				c.querySelector('button').onclick=()=>playEasy(idx);
+				wrap.appendChild(c);
+			});
+			// Challenging
+			pl.hard.forEach((card,idx)=>{
+				const c=document.createElement('div'); c.className='card';
+				c.innerHTML = `<h3>🔴 ${card.name}</h3><p>${card.text}</p>
+					<div class="row">
+						<button class="btn small danger">Play on P1</button>
+						<button class="btn small danger">Play on P2</button>
+					</div>`;
+				const [b1,b2]=c.querySelectorAll('button');
+				b1.onclick=()=>playHard(idx,0);
+				b2.onclick=()=>playHard(idx,1);
+				wrap.appendChild(c);
+			});
+			view.appendChild(wrap);
+		}
+	}
+	function renderInfo(){
+		const pid=G.turn%G.players.length;
+		const kv=document.getElementById('phaseInfo'); kv.innerHTML='';
+		function add(k,v){const a=document.createElement('div');a.textContent=k;const b=document.createElement('div');b.textContent=v;kv.append(a,b);}
+		add('Player',`P${pid+1}`);
+		add('Cases Completed', `${G.players[pid].casesWon}`);
+		add('Blocked Pharma', G.blockedClass?`${G.blockedClass} (round)`: 'None');
+	}
+	function renderLog(){
+		const el=document.getElementById('log');
+		el.innerHTML=G.log.slice(0,30).map(x=>`• ${x}`).join('<br/>');
+	}
 
-			resetBtn.addEventListener('click', resetGame);
+	// ————— Events —————
+	document.getElementById('nextPhaseBtn').onclick=nextPhase;
+	document.getElementById('endTurnBtn').onclick=endTurn;
+	document.getElementById('newGameBtn').onclick=setup;
+	document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{G.activeTab=b.dataset.tab; renderHand();});
 
-			// Init
-			updateHud();
-
-			// Cleanup if the page unloads
-			window.addEventListener('beforeunload', clearTimers);
-		})();
-	</script>
+	// Init
+	setup();
+})();
+</script>
 </body>
 </html>
