@@ -1,121 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dental Care Card Game</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Oral Order – Card Game</title>
+<style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  }
+  h1 {
+    background: #0074d9;
+    color: white;
+    padding: 12px;
+    margin: 0;
+  }
+  .game-container {
+    margin: 20px auto;
+    max-width: 900px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  #status {
+    background: #eaf3ff;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .hand {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 10px 0;
+  }
+  .card {
+    background: #fff;
+    border: 2px solid #0074d9;
+    border-radius: 8px;
+    padding: 10px;
+    width: 120px;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .card:hover {
+    transform: scale(1.05);
+  }
+  .card.procedure { border-color: #ff851b; }
+  .card.pharma { border-color: #2ecc40; }
+  .card.used { border-color: #aaaaaa; background: #f7f7f7; }
+  .btn {
+    background: #0074d9;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin: 5px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .btn:hover {
+    background: #005fa3;
+  }
+  #instructions {
+    background: #f9f9f9;
+    border-left: 4px solid #0074d9;
+    text-align: left;
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 6px;
+  }
+</style>
 </head>
 <body>
-    <div id="app">
-        <header class="game-header">
-            <h1>🦷 Dental Care Card Game</h1>
-            <div class="game-info">
-                <span id="current-player">Player 1's Turn</span>
-                <button id="game-rules-btn" class="btn btn-secondary">Rules</button>
-            </div>
-        </header>
 
-        <div class="game-board">
-            <div class="player-area" id="player1-area">
-                <div class="player-info">
-                    <h3>Player 1</h3>
-                    <div class="patient-card-slot">
-                        <div class="patient-card" id="player1-patient">
-                            <div class="card-placeholder">Select Patient</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="hand-area">
-                    <div class="hand-section">
-                        <h4>Procedure Cards</h4>
-                        <div class="hand" id="player1-procedures"></div>
-                    </div>
-                    <div class="hand-section">
-                        <h4>Pharmacology Cards</h4>
-                        <div class="hand" id="player1-pharmacology"></div>
-                    </div>
-                    <div class="hand-section">
-                        <h4>Modifier Cards</h4>
-                        <div class="hand" id="player1-modifiers"></div>
-                    </div>
-                </div>
-            </div>
+<h1>The Oral Order</h1>
+<div class="game-container">
+  <div id="status">Welcome! Click “Start Game” to begin.</div>
 
-            <div class="player-area" id="player2-area">
-                <div class="player-info">
-                    <h3>Player 2</h3>
-                    <div class="patient-card-slot">
-                        <div class="patient-card" id="player2-patient">
-                            <div class="card-placeholder">Select Patient</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="hand-area">
-                    <div class="hand-section">
-                        <h4>Procedure Cards</h4>
-                        <div class="hand" id="player2-procedures"></div>
-                    </div>
-                    <div class="hand-section">
-                        <h4>Pharmacology Cards</h4>
-                        <div class="hand" id="player2-pharmacology"></div>
-                    </div>
-                    <div class="hand-section">
-                        <h4>Modifier Cards</h4>
-                        <div class="hand" id="player2-modifiers"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <button class="btn" id="startBtn">Start Game</button>
+  <button class="btn" id="drawBtn" disabled>Draw</button>
+  <button class="btn" id="endBtn" disabled>End Turn</button>
 
-        <div class="game-controls">
-            <button id="start-game-btn" class="btn btn-primary">Start Game</button>
-            <button id="end-turn-btn" class="btn btn-secondary" disabled>End Turn</button>
-            <button id="draw-cards-btn" class="btn btn-secondary" disabled>Draw Cards</button>
-        </div>
+  <h3 id="playerTurn"></h3>
+  <div id="playerHand" class="hand"></div>
+  <h4>Used Cards</h4>
+  <div id="usedCards" class="hand"></div>
 
-        <div id="card-selection-modal" class="modal hidden">
-            <div class="modal-content">
-                <h3>Select Your Starting Patient</h3>
-                <div class="card-options" id="patient-options"></div>
-                <button id="confirm-patient-btn" class="btn btn-primary" disabled>Confirm Selection</button>
-            </div>
-        </div>
+  <div id="instructions">
+    <strong>How to Play:</strong>
+    <ul>
+      <li>Each player starts with 5 random cards (Procedures + Pharmacology).</li>
+      <li>On your turn, you can <b>Play a card</b> from your hand, or <b>Draw</b> a new card (ending your turn).</li>
+      <li>Played cards move to your Used pile.</li>
+      <li>First player to finish their patient’s treatment wins!</li>
+    </ul>
+  </div>
+</div>
 
-        <div id="rules-modal" class="modal hidden">
-            <div class="modal-content">
-                <h3>Game Rules</h3>
-                <div class="rules-content">
-                    <h4>Setup</h4>
-                    <ul>
-                        <li>Each player draws 2 Patient Cards and chooses 1</li>
-                        <li>Each player draws 3 Procedure Cards</li>
-                        <li>Each player draws 4 Pharmacology Cards</li>
-                        <li>Each player draws 1 Easy and 1 Challenging Modifier Card</li>
-                    </ul>
-                    
-                    <h4>Turn Phases</h4>
-                    <ol>
-                        <li><strong>Draw:</strong> Draw 1 Procedure and 1 Pharmacology Card</li>
-                        <li><strong>Action:</strong> Play Procedure Cards with required Pharmacology Cards</li>
-                        <li><strong>Modifiers:</strong> Optionally play Easy/Challenging Cards</li>
-                        <li><strong>Replenish:</strong> Draw new Modifier Card if you played one</li>
-                    </ol>
-                    
-                    <h4>Winning</h4>
-                    <p>Complete all Procedure Cards and Pharmacology Requirements on your Patient Card. First player to complete 2 cases wins!</p>
-                </div>
-                <button id="close-rules-btn" class="btn btn-secondary">Close</button>
-            </div>
-        </div>
+<script>
+// ---------- Basic Deck Setup ----------
+const PROCEDURES = [
+  { name: "Pain Management", type: "Procedure", requirement: "Analgesic" },
+  { name: "Root Canal", type: "Procedure", requirement: "Anesthetic" },
+  { name: "Prophylaxis", type: "Procedure", requirement: null },
+  { name: "Surgical Extraction", type: "Procedure", requirement: "Anesthetic" },
+  { name: "Scaling and Root Planing", type: "Procedure", requirement: "Anesthetic" },
+  { name: "Dental Implant Surgery", type: "Procedure", requirement: "Antibiotic" },
+  { name: "Dry Socket Treatment", type: "Procedure", requirement: "Topical Anesthetic" }
+];
 
-        <div id="game-message" class="game-message hidden"></div>
-    </div>
+const PHARMA = [
+  { name: "Ibuprofen", type: "Pharmacology", category: "Analgesic" },
+  { name: "Clindamycin", type: "Pharmacology", category: "Antibiotic" },
+  { name: "Mepivacaine", type: "Pharmacology", category: "Anesthetic" },
+  { name: "Benzocaine Gel", type: "Pharmacology", category: "Topical Anesthetic" },
+  { name: "Chlorhexidine", type: "Pharmacology", category: "Antiseptic" },
+  { name: "Cyclobenzaprine", type: "Pharmacology", category: "Muscle Relaxant" },
+  { name: "Nystatin", type: "Pharmacology", category: "Antifungal" }
+];
 
-    <script src="card-data.js"></script>
-    <script src="game-logic.js"></script>
-    <script src="ui-handler.js"></script>
-    <script src="app.js"></script>
+function shuffle(deck) {
+  const copy = [...deck];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+// ---------- Game State ----------
+let gameState = {
+  players: [
+    { name: "Player 1", hand: [], used: [] },
+    { name: "Player 2", hand: [], used: [] }
+  ],
+  deck: [],
+  currentPlayer: 0,
+  started: false
+};
+
+// ---------- UI Rendering ----------
+function renderGame() {
+  const player = gameState.players[gameState.currentPlayer];
+  document.getElementById("playerTurn").innerText = `🎮 ${player.name}'s Turn`;
+  document.getElementById("playerHand").innerHTML = "";
+  document.getElementById("usedCards").innerHTML = "";
+
+  player.hand.forEach((card, index) => {
+    const div = document.createElement("div");
+    div.className = `card ${card.type === "Procedure" ? "procedure" : "pharma"}`;
+    div.innerHTML = `<strong>${card.name}</strong><br><small>${card.type}</small>`;
+    div.onclick = () => playCard(index);
+    document.getElementById("playerHand").appendChild(div);
+  });
+
+  player.used.forEach(card => {
+    const div = document.createElement("div");
+    div.className = "card used";
+    div.innerHTML = `<strong>${card.name}</strong><br><small>${card.type}</small>`;
+    document.getElementById("usedCards").appendChild(div);
+  });
+
+  document.getElementById("status").innerText = `Your options: Play a card or Draw one (ends your turn).`;
+}
+
+// ---------- Game Flow ----------
+function startGame() {
+  gameState.started = true;
+  gameState.deck = shuffle([...PROCEDURES, ...PHARMA]);
+  gameState.players.forEach(p => {
+    p.hand = gameState.deck.splice(0, 5);
+    p.used = [];
+  });
+  gameState.currentPlayer = 0;
+  document.getElementById("drawBtn").disabled = false;
+  document.getElementById("endBtn").disabled = false;
+  document.getElementById("startBtn").disabled = true;
+  renderGame();
+}
+
+function playCard(index) {
+  const player = gameState.players[gameState.currentPlayer];
+  const card = player.hand.splice(index, 1)[0];
+  player.used.push(card);
+  document.getElementById("status").innerText = `${player.name} played ${card.name}`;
+  renderGame();
+}
+
+function drawCard() {
+  const player = gameState.players[gameState.currentPlayer];
+  if (gameState.deck.length === 0) {
+    document.getElementById("status").innerText = "Deck empty!";
+    return;
+  }
+  const card = gameState.deck.pop();
+  player.hand.push(card);
+  document.getElementById("status").innerText = `${player.name} drew a card (${card.name}). Turn ends.`;
+  endTurn();
+}
+
+function endTurn() {
+  gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
+  renderGame();
+}
+
+// ---------- Bind Buttons ----------
+document.getElementById("startBtn").addEventListener("click", startGame);
+document.getElementById("drawBtn").addEventListener("click", drawCard);
+document.getElementById("endBtn").addEventListener("click", endTurn);
+</script>
 </body>
 </html>
