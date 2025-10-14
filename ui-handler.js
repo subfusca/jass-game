@@ -2,39 +2,68 @@
 
 class UIHandler {
     constructor() {
+        console.log('Initializing UI Handler...');
         this.gameState = null;
         this.selectedPatientCard = null;
         this.selectedProcedureCard = null;
         this.selectedPharmacologyCards = [];
         this.setupEventListeners();
+        console.log('UI Handler initialized successfully');
     }
 
     setupEventListeners() {
+        console.log('Setting up event listeners...');
+        
         // Game control buttons
-        document.getElementById('start-game-btn').addEventListener('click', () => {
-            this.startGame();
-        });
+        const startBtn = document.getElementById('start-game-btn');
+        const endTurnBtn = document.getElementById('end-turn-btn');
+        const drawBtn = document.getElementById('draw-cards-btn');
+        
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                console.log('Start game button clicked');
+                this.startGame();
+            });
+        } else {
+            console.error('Start game button not found');
+        }
 
-        document.getElementById('end-turn-btn').addEventListener('click', () => {
-            this.endTurn();
-        });
+        if (endTurnBtn) {
+            endTurnBtn.addEventListener('click', () => {
+                console.log('End turn button clicked');
+                this.endTurn();
+            });
+        }
 
-        document.getElementById('draw-cards-btn').addEventListener('click', () => {
-            this.drawCards();
-        });
+        if (drawBtn) {
+            drawBtn.addEventListener('click', () => {
+                console.log('Draw cards button clicked');
+                this.drawCards();
+            });
+        }
 
         // Modal buttons
-        document.getElementById('game-rules-btn').addEventListener('click', () => {
-            this.showRulesModal();
-        });
+        const rulesBtn = document.getElementById('game-rules-btn');
+        const closeRulesBtn = document.getElementById('close-rules-btn');
+        const confirmPatientBtn = document.getElementById('confirm-patient-btn');
+        
+        if (rulesBtn) {
+            rulesBtn.addEventListener('click', () => {
+                this.showRulesModal();
+            });
+        }
 
-        document.getElementById('close-rules-btn').addEventListener('click', () => {
-            this.hideRulesModal();
-        });
+        if (closeRulesBtn) {
+            closeRulesBtn.addEventListener('click', () => {
+                this.hideRulesModal();
+            });
+        }
 
-        document.getElementById('confirm-patient-btn').addEventListener('click', () => {
-            this.confirmPatientSelection();
-        });
+        if (confirmPatientBtn) {
+            confirmPatientBtn.addEventListener('click', () => {
+                this.confirmPatientSelection();
+            });
+        }
 
         // Close modals when clicking outside
         document.addEventListener('click', (e) => {
@@ -42,16 +71,29 @@ class UIHandler {
                 this.hideAllModals();
             }
         });
+        
+        console.log('Event listeners setup complete');
     }
 
     startGame() {
-        this.gameState = new GameState();
-        this.gameState.startGame();
-        this.updateGameDisplay();
-        
-        // Disable start button, enable other controls
-        document.getElementById('start-game-btn').disabled = true;
-        document.getElementById('draw-cards-btn').disabled = false;
+        try {
+            console.log('Starting new game...');
+            this.gameState = new GameState();
+            this.gameState.startGame();
+            this.updateGameDisplay();
+            
+            // Disable start button, enable other controls
+            const startBtn = document.getElementById('start-game-btn');
+            const drawBtn = document.getElementById('draw-cards-btn');
+            
+            if (startBtn) startBtn.disabled = true;
+            if (drawBtn) drawBtn.disabled = false;
+            
+            console.log('Game started successfully');
+        } catch (error) {
+            console.error('Error starting game:', error);
+            alert('Error starting game: ' + error.message);
+        }
     }
 
     endTurn() {
@@ -69,18 +111,29 @@ class UIHandler {
     }
 
     updateGameDisplay() {
-        if (!this.gameState) return;
+        if (!this.gameState) {
+            console.log('No game state to display');
+            return;
+        }
+
+        console.log('Updating game display...');
 
         // Update current player display
         const currentPlayerElement = document.getElementById('current-player');
-        currentPlayerElement.textContent = `Player ${this.gameState.currentPlayer}'s Turn`;
+        if (currentPlayerElement) {
+            currentPlayerElement.textContent = `Player ${this.gameState.currentPlayer}'s Turn`;
+        }
 
         // Update button states
         const drawBtn = document.getElementById('draw-cards-btn');
         const endTurnBtn = document.getElementById('end-turn-btn');
         
-        drawBtn.disabled = this.gameState.turnPhase !== 'draw';
-        endTurnBtn.disabled = this.gameState.turnPhase === 'draw';
+        if (drawBtn) {
+            drawBtn.disabled = this.gameState.turnPhase !== 'draw';
+        }
+        if (endTurnBtn) {
+            endTurnBtn.disabled = this.gameState.turnPhase === 'draw';
+        }
 
         // Update player areas
         this.updatePlayerArea(1);
@@ -91,6 +144,8 @@ class UIHandler {
             this.showGameMessage(this.gameState.gameMessage);
             this.gameState.gameMessage = '';
         }
+        
+        console.log('Game display updated');
     }
 
     updatePlayerArea(playerId) {
@@ -113,17 +168,21 @@ class UIHandler {
 
         // Highlight current player
         const playerArea = document.getElementById(`player${playerId}-area`);
-        if (isCurrentPlayer) {
-            playerArea.style.border = '3px solid #74b9ff';
-            playerArea.style.boxShadow = '0 0 20px rgba(116, 185, 255, 0.5)';
-        } else {
-            playerArea.style.border = '3px solid transparent';
-            playerArea.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+        if (playerArea) {
+            if (isCurrentPlayer) {
+                playerArea.style.border = '3px solid #74b9ff';
+                playerArea.style.boxShadow = '0 0 20px rgba(116, 185, 255, 0.5)';
+            } else {
+                playerArea.style.border = '3px solid transparent';
+                playerArea.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+            }
         }
     }
 
     updatePatientCard(playerId, patient) {
         const patientElement = document.getElementById(`player${playerId}-patient`);
+        
+        if (!patientElement) return;
         
         if (patient) {
             patientElement.innerHTML = `
@@ -146,6 +205,8 @@ class UIHandler {
 
     updateHand(playerId, handType, cards, cardClass) {
         const handElement = document.getElementById(`player${playerId}-${handType}`);
+        if (!handElement) return;
+        
         handElement.innerHTML = '';
 
         cards.forEach(card => {
@@ -171,6 +232,8 @@ class UIHandler {
     }
 
     handleCardClick(card, handType, cardElement) {
+        console.log('Card clicked:', card.name, handType);
+        
         if (handType === 'procedures') {
             this.selectProcedureCard(card, cardElement);
         } else if (handType === 'pharmacology') {
@@ -224,6 +287,8 @@ class UIHandler {
     highlightRequiredPharmacology(requirements) {
         const currentPlayer = this.gameState.currentPlayer;
         const handElement = document.getElementById(`player${currentPlayer}-pharmacology`);
+        if (!handElement) return;
+        
         const cards = handElement.querySelectorAll('.card');
         
         cards.forEach(cardElement => {
@@ -276,8 +341,15 @@ class UIHandler {
     }
 
     showPatientSelection(patientOptions) {
+        console.log('Showing patient selection for', patientOptions.length, 'options');
+        
         const modal = document.getElementById('card-selection-modal');
         const optionsContainer = document.getElementById('patient-options');
+        
+        if (!modal || !optionsContainer) {
+            console.error('Patient selection modal elements not found');
+            return;
+        }
         
         optionsContainer.innerHTML = '';
         
@@ -317,7 +389,10 @@ class UIHandler {
         this.selectedPatientCard = patient;
         
         // Enable confirm button
-        document.getElementById('confirm-patient-btn').disabled = false;
+        const confirmBtn = document.getElementById('confirm-patient-btn');
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+        }
     }
 
     confirmPatientSelection() {
@@ -330,16 +405,21 @@ class UIHandler {
     }
 
     hidePatientSelection() {
-        document.getElementById('card-selection-modal').classList.add('hidden');
-        document.getElementById('confirm-patient-btn').disabled = true;
+        const modal = document.getElementById('card-selection-modal');
+        const confirmBtn = document.getElementById('confirm-patient-btn');
+        
+        if (modal) modal.classList.add('hidden');
+        if (confirmBtn) confirmBtn.disabled = true;
     }
 
     showRulesModal() {
-        document.getElementById('rules-modal').classList.remove('hidden');
+        const modal = document.getElementById('rules-modal');
+        if (modal) modal.classList.remove('hidden');
     }
 
     hideRulesModal() {
-        document.getElementById('rules-modal').classList.add('hidden');
+        const modal = document.getElementById('rules-modal');
+        if (modal) modal.classList.add('hidden');
     }
 
     hideAllModals() {
@@ -349,6 +429,8 @@ class UIHandler {
 
     showGameMessage(message) {
         const messageElement = document.getElementById('game-message');
+        if (!messageElement) return;
+        
         messageElement.textContent = message;
         messageElement.classList.remove('hidden');
         
