@@ -2,6 +2,7 @@
 
 class GameState {
     constructor() {
+        console.log('Creating new game state...');
         this.currentPlayer = 1;
         this.gamePhase = 'setup'; // setup, playing, ended
         this.players = {
@@ -18,15 +19,18 @@ class GameState {
         this.selectedPatient = null;
         this.gameMessage = '';
         this.turnPhase = 'draw'; // draw, action, modifiers, replenish
+        console.log('Game state created successfully');
     }
 
     startGame() {
+        console.log('Starting game...');
         this.gamePhase = 'playing';
         this.setupPlayerHands();
         this.showPatientSelection();
     }
 
     setupPlayerHands() {
+        console.log('Setting up player hands...');
         // Each player draws initial cards
         for (let playerId = 1; playerId <= 2; playerId++) {
             const player = this.players[playerId];
@@ -52,6 +56,7 @@ class GameState {
                 createCardInstance(card)
             );
         }
+        console.log('Player hands setup complete');
     }
 
     showPatientSelection() {
@@ -69,6 +74,7 @@ class GameState {
     }
 
     selectPatient(patientCard) {
+        console.log('Selecting patient:', patientCard.name);
         const currentPlayer = this.players[this.currentPlayer];
         currentPlayer.activePatient = createCardInstance(patientCard);
         
@@ -87,11 +93,13 @@ class GameState {
     }
 
     startTurn() {
+        console.log('Starting turn for player:', this.currentPlayer);
         this.turnPhase = 'draw';
         this.updateUI();
     }
 
     drawCards() {
+        console.log('Drawing cards for player:', this.currentPlayer);
         const currentPlayer = this.players[this.currentPlayer];
         
         // Draw 1 procedure and 1 pharmacology card
@@ -265,7 +273,7 @@ class GameState {
                 if (targetPlayer.pharmacology.length > 0) {
                     const randomIndex = Math.floor(Math.random() * targetPlayer.pharmacology.length);
                     targetPlayer.pharmacology.splice(randomIndex, 1);
-                    this.showMessage(`${targetPlayer.id}: Patient Panic! Discarded random card.`);
+                    this.showMessage(`Player ${targetPlayer.id}: Patient Panic! Discarded random card.`);
                 }
                 break;
             case 'supply-shortage':
@@ -274,11 +282,11 @@ class GameState {
                 break;
             case 'anesthetic-failure':
                 targetPlayer.pharmacology = targetPlayer.pharmacology.filter(card => card.type !== 'Anesthetic');
-                this.showMessage(`${targetPlayer.id}: Anesthetic Failure! All anesthetic cards discarded.`);
+                this.showMessage(`Player ${targetPlayer.id}: Anesthetic Failure! All anesthetic cards discarded.`);
                 break;
             case 'equipment-malfunction':
                 targetPlayer.skipNextTurn = true;
-                this.showMessage(`${targetPlayer.id}: Equipment Malfunction! Must skip next turn.`);
+                this.showMessage(`Player ${targetPlayer.id}: Equipment Malfunction! Must skip next turn.`);
                 break;
         }
     }
