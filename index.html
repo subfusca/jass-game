@@ -3,711 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical Card Game</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-
-        .game-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .game-header {
-            text-align: center;
-            margin-bottom: 30px;
-            color: white;
-        }
-
-        .game-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .game-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-        }
-
-        .turn-info, .deck-info {
-            color: white;
-            font-size: 1.1rem;
-        }
-
-        .game-board {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .player-section {
-            background: rgba(255,255,255,0.95);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        }
-
-        .player-header {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #4a5568;
-        }
-
-        .card-zone {
-            margin-bottom: 20px;
-            min-height: 120px;
-            border: 2px dashed #cbd5e0;
-            border-radius: 10px;
-            padding: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .card-zone.has-cards {
-            border-color: #4299e1;
-            background: rgba(66, 153, 225, 0.05);
-        }
-
-        .zone-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #2d3748;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .zone-badge {
-            background: #4299e1;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-        }
-
-        .card {
-            display: inline-block;
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 120px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .card.pharma {
-            border-left: 4px solid #48bb78;
-        }
-
-        .card.procedure {
-            border-left: 4px solid #ed8936;
-        }
-
-        .card.modifier {
-            border-left: 4px solid #9f7aea;
-            opacity: 0.6;
-        }
-
-        .card.disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .card.played {
-            border-color: #38a169;
-            background: #f0fff4;
-        }
-
-        .card.discarded {
-            border-color: #e53e3e;
-            background: #fed7d7;
-            opacity: 0.7;
-        }
-
-        .card-name {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .card-type {
-            font-size: 0.8rem;
-            color: #718096;
-            text-transform: uppercase;
-        }
-
-        .game-controls {
-            text-align: center;
-            margin-top: 30px;
-        }
-
-        .btn {
-            background: #4299e1;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            margin: 0 10px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
-        }
-
-        .btn:hover {
-            background: #3182ce;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(66, 153, 225, 0.4);
-        }
-
-        .btn:disabled {
-            background: #a0aec0;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .btn.danger {
-            background: #e53e3e;
-            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
-        }
-
-        .btn.danger:hover {
-            background: #c53030;
-            box-shadow: 0 6px 16px rgba(229, 62, 62, 0.4);
-        }
-
-        .btn.success {
-            background: #48bb78;
-            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
-        }
-
-        .btn.success:hover {
-            background: #38a169;
-            box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
-        }
-
-        .game-log {
-            background: rgba(255,255,255,0.95);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #e2e8f0;
-        }
-
-        .log-entry {
-            margin-bottom: 5px;
-            padding: 5px 0;
-            border-bottom: 1px solid #f7fafc;
-        }
-
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-
-        .status-message {
-            text-align: center;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 8px;
-            font-weight: bold;
-        }
-
-        .status-message.info {
-            background: #bee3f8;
-            color: #2c5282;
-            border: 1px solid #90cdf4;
-        }
-
-        .status-message.warning {
-            background: #faf089;
-            color: #744210;
-            border: 1px solid #f6e05e;
-        }
-
-        .status-message.success {
-            background: #c6f6d5;
-            color: #22543d;
-            border: 1px solid #9ae6b4;
-        }
-
-        @media (max-width: 768px) {
-            .game-board {
-                grid-template-columns: 1fr;
-            }
-            
-            .game-info {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .card {
-                min-width: 100px;
-                font-size: 0.9rem;
-            }
-        }
-    </style>
+    <title>Dental Care Card Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="game-container">
-        <div class="game-header">
-            <h1>🏥 Medical Card Game</h1>
-            <p>Strategic Medical Decision Making</p>
-        </div>
-
-        <div class="game-info">
-            <div class="turn-info">
-                <strong>Current Turn:</strong> <span id="current-player">Player 1</span>
+    <div id="app">
+        <header class="game-header">
+            <h1>🦷 Dental Care Card Game</h1>
+            <div class="game-info">
+                <span id="current-player">Player 1's Turn</span>
+                <button id="game-rules-btn" class="btn btn-secondary">Rules</button>
             </div>
-            <div class="deck-info">
-                <strong>Cards Remaining:</strong> <span id="deck-count">0</span>
-            </div>
-        </div>
-
-        <div id="status-message" class="status-message info" style="display: none;">
-            Game ready to start!
-        </div>
+        </header>
 
         <div class="game-board">
-            <div class="player-section">
-                <div class="player-header">Player 1</div>
-                
-                <div class="card-zone" id="player1-hand">
-                    <div class="zone-title">
-                        🎯 In Hand
-                        <span class="zone-badge" id="player1-hand-count">0</span>
+            <div class="player-area" id="player1-area">
+                <div class="player-info">
+                    <h3>Player 1</h3>
+                    <div class="patient-card-slot">
+                        <div class="patient-card" id="player1-patient">
+                            <div class="card-placeholder">Select Patient</div>
+                        </div>
                     </div>
                 </div>
-
-                <div class="card-zone" id="player1-procedure">
-                    <div class="zone-title">
-                        🏥 Procedure Area
-                        <span class="zone-badge" id="player1-procedure-count">0</span>
+                <div class="hand-area">
+                    <div class="hand-section">
+                        <h4>Procedure Cards</h4>
+                        <div class="hand" id="player1-procedures"></div>
                     </div>
-                </div>
-
-                <div class="card-zone" id="player1-used">
-                    <div class="zone-title">
-                        ✅ Used Cards
-                        <span class="zone-badge" id="player1-used-count">0</span>
+                    <div class="hand-section">
+                        <h4>Pharmacology Cards</h4>
+                        <div class="hand" id="player1-pharmacology"></div>
                     </div>
-                </div>
-
-                <div class="card-zone" id="player1-discard">
-                    <div class="zone-title">
-                        🗑️ Discarded
-                        <span class="zone-badge" id="player1-discard-count">0</span>
+                    <div class="hand-section">
+                        <h4>Modifier Cards</h4>
+                        <div class="hand" id="player1-modifiers"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="player-section">
-                <div class="player-header">Player 2</div>
-                
-                <div class="card-zone" id="player2-hand">
-                    <div class="zone-title">
-                        🎯 In Hand
-                        <span class="zone-badge" id="player2-hand-count">0</span>
+            <div class="player-area" id="player2-area">
+                <div class="player-info">
+                    <h3>Player 2</h3>
+                    <div class="patient-card-slot">
+                        <div class="patient-card" id="player2-patient">
+                            <div class="card-placeholder">Select Patient</div>
+                        </div>
                     </div>
                 </div>
-
-                <div class="card-zone" id="player2-procedure">
-                    <div class="zone-title">
-                        🏥 Procedure Area
-                        <span class="zone-badge" id="player2-procedure-count">0</span>
+                <div class="hand-area">
+                    <div class="hand-section">
+                        <h4>Procedure Cards</h4>
+                        <div class="hand" id="player2-procedures"></div>
                     </div>
-                </div>
-
-                <div class="card-zone" id="player2-used">
-                    <div class="zone-title">
-                        ✅ Used Cards
-                        <span class="zone-badge" id="player2-used-count">0</span>
+                    <div class="hand-section">
+                        <h4>Pharmacology Cards</h4>
+                        <div class="hand" id="player2-pharmacology"></div>
                     </div>
-                </div>
-
-                <div class="card-zone" id="player2-discard">
-                    <div class="zone-title">
-                        🗑️ Discarded
-                        <span class="zone-badge" id="player2-discard-count">0</span>
+                    <div class="hand-section">
+                        <h4>Modifier Cards</h4>
+                        <div class="hand" id="player2-modifiers"></div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="game-controls">
-            <button class="btn success" id="start-game">Start New Game</button>
-            <button class="btn" id="draw-card" disabled>Draw Card</button>
-            <button class="btn" id="end-turn" disabled>End Turn</button>
-            <button class="btn danger" id="discard-hand">Discard Hand</button>
+            <button id="start-game-btn" class="btn btn-primary">Start Game</button>
+            <button id="end-turn-btn" class="btn btn-secondary" disabled>End Turn</button>
+            <button id="draw-cards-btn" class="btn btn-secondary" disabled>Draw Cards</button>
         </div>
 
-        <div class="game-log">
-            <div class="zone-title">📝 Game Log</div>
-            <div id="log-entries"></div>
+        <div id="card-selection-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Select Your Starting Patient</h3>
+                <div class="card-options" id="patient-options"></div>
+                <button id="confirm-patient-btn" class="btn btn-primary" disabled>Confirm Selection</button>
+            </div>
         </div>
+
+        <div id="rules-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Game Rules</h3>
+                <div class="rules-content">
+                    <h4>Setup</h4>
+                    <ul>
+                        <li>Each player draws 2 Patient Cards and chooses 1</li>
+                        <li>Each player draws 3 Procedure Cards</li>
+                        <li>Each player draws 4 Pharmacology Cards</li>
+                        <li>Each player draws 1 Easy and 1 Challenging Modifier Card</li>
+                    </ul>
+                    
+                    <h4>Turn Phases</h4>
+                    <ol>
+                        <li><strong>Draw:</strong> Draw 1 Procedure and 1 Pharmacology Card</li>
+                        <li><strong>Action:</strong> Play Procedure Cards with required Pharmacology Cards</li>
+                        <li><strong>Modifiers:</strong> Optionally play Easy/Challenging Cards</li>
+                        <li><strong>Replenish:</strong> Draw new Modifier Card if you played one</li>
+                    </ol>
+                    
+                    <h4>Winning</h4>
+                    <p>Complete all Procedure Cards and Pharmacology Requirements on your Patient Card. First player to complete 2 cases wins!</p>
+                </div>
+                <button id="close-rules-btn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+
+        <div id="game-message" class="game-message hidden"></div>
     </div>
 
-    <script>
-        class MedicalCardGame {
-            constructor() {
-                this.currentPlayer = 1;
-                this.gameStarted = false;
-                this.turnPhase = 'play'; // 'play' or 'drew'
-                this.initialHandSize = 5;
-                
-                // Card data - Modifiers disabled as per requirements
-                this.cardDatabase = {
-                    pharma: [
-                        { id: 'aspirin', name: 'Aspirin', type: 'pharma', effect: 'Pain relief' },
-                        { id: 'ibuprofen', name: 'Ibuprofen', type: 'pharma', effect: 'Anti-inflammatory' },
-                        { id: 'acetaminophen', name: 'Acetaminophen', type: 'pharma', effect: 'Fever reducer' },
-                        { id: 'metformin', name: 'Metformin', type: 'pharma', effect: 'Diabetes management' },
-                        { id: 'lisinopril', name: 'Lisinopril', type: 'pharma', effect: 'Blood pressure control' },
-                        { id: 'atorvastatin', name: 'Atorvastatin', type: 'pharma', effect: 'Cholesterol management' },
-                        { id: 'omeprazole', name: 'Omeprazole', type: 'pharma', effect: 'Acid reflux treatment' },
-                        { id: 'levothyroxine', name: 'Levothyroxine', type: 'pharma', effect: 'Thyroid hormone' }
-                    ],
-                    procedure: [
-                        { id: 'blood_test', name: 'Blood Test', type: 'procedure', effect: 'Diagnostic screening' },
-                        { id: 'x_ray', name: 'X-Ray', type: 'procedure', effect: 'Bone imaging' },
-                        { id: 'mri_scan', name: 'MRI Scan', type: 'procedure', effect: 'Soft tissue imaging' },
-                        { id: 'ct_scan', name: 'CT Scan', type: 'procedure', effect: 'Cross-sectional imaging' },
-                        { id: 'ultrasound', name: 'Ultrasound', type: 'procedure', effect: 'Real-time imaging' },
-                        { id: 'ekg', name: 'EKG', type: 'procedure', effect: 'Heart rhythm analysis' },
-                        { id: 'endoscopy', name: 'Endoscopy', type: 'procedure', effect: 'Internal examination' },
-                        { id: 'biopsy', name: 'Biopsy', type: 'procedure', effect: 'Tissue sampling' }
-                    ]
-                    // Modifiers disabled as per requirements
-                };
-
-                this.deck = [];
-                this.playerHands = { 1: [], 2: [] };
-                this.playerProcedureAreas = { 1: [], 2: [] };
-                this.playerUsedCards = { 1: [], 2: [] };
-                this.playerDiscardedCards = { 1: [], 2: [] };
-                
-                this.initializeEventListeners();
-                this.log('Game initialized. Click "Start New Game" to begin.');
-            }
-
-            initializeEventListeners() {
-                document.getElementById('start-game').addEventListener('click', () => this.startGame());
-                document.getElementById('draw-card').addEventListener('click', () => this.drawCard());
-                document.getElementById('end-turn').addEventListener('click', () => this.endTurn());
-                document.getElementById('discard-hand').addEventListener('click', () => this.discardCurrentHand());
-            }
-
-            startGame() {
-                this.gameStarted = true;
-                this.currentPlayer = 1;
-                this.turnPhase = 'play';
-                
-                // Create deck from pharma and procedure cards only (modifiers disabled)
-                this.deck = [
-                    ...this.cardDatabase.pharma,
-                    ...this.cardDatabase.procedure
-                ];
-                
-                // Shuffle deck
-                this.shuffleDeck();
-                
-                // Deal initial random hands
-                this.dealInitialHands();
-                
-                this.updateUI();
-                this.log('Game started! Each player has been dealt ' + this.initialHandSize + ' random cards.');
-                this.log('Player 1, you can play cards or draw one card and end your turn.');
-                this.showStatus('Game started! Player 1\'s turn.', 'success');
-            }
-
-            shuffleDeck() {
-                for (let i = this.deck.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
-                }
-            }
-
-            dealInitialHands() {
-                // Deal random initial hands (TCG/Uno style)
-                for (let player = 1; player <= 2; player++) {
-                    this.playerHands[player] = [];
-                    
-                    // Draw random cards from the full deck pool
-                    for (let i = 0; i < this.initialHandSize; i++) {
-                        if (this.deck.length > 0) {
-                            const randomIndex = Math.floor(Math.random() * this.deck.length);
-                            const card = this.deck.splice(randomIndex, 1)[0];
-                            this.playerHands[player].push(card);
-                        }
-                    }
-                }
-            }
-
-            drawCard() {
-                if (this.turnPhase === 'drew') {
-                    this.showStatus('You already drew a card this turn!', 'warning');
-                    return;
-                }
-
-                if (this.deck.length === 0) {
-                    this.showStatus('No more cards in deck!', 'warning');
-                    return;
-                }
-
-                const drawnCard = this.deck.pop();
-                this.playerHands[this.currentPlayer].push(drawnCard);
-                
-                this.turnPhase = 'drew';
-                this.updateUI();
-                
-                this.log(`Player ${this.currentPlayer} drew: ${drawnCard.name}`);
-                this.showStatus(`Player ${this.currentPlayer} drew a card. Turn ends automatically.`, 'info');
-                
-                // Auto-end turn after drawing (as per requirements)
-                setTimeout(() => this.endTurn(), 1000);
-            }
-
-            endTurn() {
-                if (!this.gameStarted) return;
-
-                this.log(`Player ${this.currentPlayer} ended their turn.`);
-                
-                // Switch players
-                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-                this.turnPhase = 'play';
-                
-                this.updateUI();
-                
-                if (this.deck.length === 0) {
-                    this.showStatus('Deck is empty! Game continues with remaining cards.', 'warning');
-                } else {
-                    this.showStatus(`Player ${this.currentPlayer}'s turn. Play cards or draw one and end turn.`, 'info');
-                }
-            }
-
-            discardCurrentHand() {
-                if (!this.gameStarted) return;
-
-                const currentHand = this.playerHands[this.currentPlayer];
-                if (currentHand.length === 0) {
-                    this.showStatus('No cards to discard!', 'warning');
-                    return;
-                }
-
-                // Move all cards from hand to discard
-                this.playerDiscardedCards[this.currentPlayer].push(...currentHand);
-                this.playerHands[this.currentPlayer] = [];
-                
-                this.updateUI();
-                this.log(`Player ${this.currentPlayer} discarded their entire hand.`);
-                this.showStatus(`Player ${this.currentPlayer} discarded their hand.`, 'warning');
-                
-                // Auto-end turn after discarding
-                this.endTurn();
-            }
-
-            playCard(cardId, playerId) {
-                if (!this.gameStarted) return;
-                if (playerId !== this.currentPlayer) return;
-                if (this.turnPhase === 'drew') {
-                    this.showStatus('Cannot play cards after drawing!', 'warning');
-                    return;
-                }
-
-                // Find card in player's hand
-                const hand = this.playerHands[playerId];
-                const cardIndex = hand.findIndex(card => card.id === cardId);
-                
-                if (cardIndex === -1) {
-                    this.showStatus('Card not found in hand!', 'warning');
-                    return;
-                }
-
-                const card = hand.splice(cardIndex, 1)[0];
-                
-                // Determine where to place the card based on type
-                if (card.type === 'procedure') {
-                    this.playerProcedureAreas[playerId].push(card);
-                    this.log(`Player ${playerId} played procedure: ${card.name}`);
-                } else {
-                    // Pharma cards go to used area
-                    this.playerUsedCards[playerId].push(card);
-                    this.log(`Player ${playerId} played pharma: ${card.name}`);
-                }
-
-                this.updateUI();
-                this.showStatus(`Player ${playerId} played ${card.name}.`, 'success');
-            }
-
-            discardCard(cardId, playerId) {
-                if (!this.gameStarted) return;
-                if (playerId !== this.currentPlayer) return;
-                if (this.turnPhase === 'drew') {
-                    this.showStatus('Cannot discard cards after drawing!', 'warning');
-                    return;
-                }
-
-                // Find card in player's hand
-                const hand = this.playerHands[playerId];
-                const cardIndex = hand.findIndex(card => card.id === cardId);
-                
-                if (cardIndex === -1) {
-                    this.showStatus('Card not found in hand!', 'warning');
-                    return;
-                }
-
-                const card = hand.splice(cardIndex, 1)[0];
-                this.playerDiscardedCards[playerId].push(card);
-                
-                this.updateUI();
-                this.log(`Player ${playerId} discarded: ${card.name}`);
-                this.showStatus(`Player ${playerId} discarded ${card.name}.`, 'info');
-            }
-
-            createCardElement(card, playerId) {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = `card ${card.type}`;
-                cardDiv.innerHTML = `
-                    <div class="card-name">${card.name}</div>
-                    <div class="card-type">${card.type}</div>
-                `;
-
-                // Add click handlers for cards in hand
-                if (this.playerHands[playerId].includes(card)) {
-                    cardDiv.addEventListener('click', () => this.playCard(card.id, playerId));
-                    cardDiv.title = 'Click to play';
-                } else if (this.playerProcedureAreas[playerId].includes(card)) {
-                    cardDiv.classList.add('played');
-                    cardDiv.title = 'Played procedure card';
-                } else if (this.playerUsedCards[playerId].includes(card)) {
-                    cardDiv.classList.add('played');
-                    cardDiv.title = 'Used pharma card';
-                } else if (this.playerDiscardedCards[playerId].includes(card)) {
-                    cardDiv.classList.add('discarded');
-                    cardDiv.title = 'Discarded card';
-                }
-
-                return cardDiv;
-            }
-
-            updateUI() {
-                // Update turn info
-                document.getElementById('current-player').textContent = `Player ${this.currentPlayer}`;
-                document.getElementById('deck-count').textContent = this.deck.length;
-
-                // Update card zones for both players
-                for (let player = 1; player <= 2; player++) {
-                    this.updatePlayerZones(player);
-                }
-
-                // Update button states
-                const drawBtn = document.getElementById('draw-card');
-                const endTurnBtn = document.getElementById('end-turn');
-                const discardBtn = document.getElementById('discard-hand');
-
-                if (this.gameStarted) {
-                    drawBtn.disabled = this.turnPhase === 'drew' || this.deck.length === 0;
-                    endTurnBtn.disabled = false;
-                    discardBtn.disabled = this.playerHands[this.currentPlayer].length === 0;
-                } else {
-                    drawBtn.disabled = true;
-                    endTurnBtn.disabled = true;
-                    discardBtn.disabled = true;
-                }
-            }
-
-            updatePlayerZones(playerId) {
-                const zones = {
-                    hand: this.playerHands[playerId],
-                    procedure: this.playerProcedureAreas[playerId],
-                    used: this.playerUsedCards[playerId],
-                    discard: this.playerDiscardedCards[playerId]
-                };
-
-                for (const [zoneType, cards] of Object.entries(zones)) {
-                    const zoneElement = document.getElementById(`player${playerId}-${zoneType}`);
-                    const countBadge = document.getElementById(`player${playerId}-${zoneType}-count`);
-                    
-                    // Clear existing cards
-                    const existingCards = zoneElement.querySelectorAll('.card');
-                    existingCards.forEach(card => card.remove());
-                    
-                    // Add cards
-                    cards.forEach(card => {
-                        const cardElement = this.createCardElement(card, playerId);
-                        zoneElement.appendChild(cardElement);
-                    });
-                    
-                    // Update count and zone styling
-                    countBadge.textContent = cards.length;
-                    if (cards.length > 0) {
-                        zoneElement.classList.add('has-cards');
-                    } else {
-                        zoneElement.classList.remove('has-cards');
-                    }
-                }
-            }
-
-            showStatus(message, type = 'info') {
-                const statusElement = document.getElementById('status-message');
-                statusElement.textContent = message;
-                statusElement.className = `status-message ${type}`;
-                statusElement.style.display = 'block';
-                
-                // Hide after 3 seconds
-                setTimeout(() => {
-                    statusElement.style.display = 'none';
-                }, 3000);
-            }
-
-            log(message) {
-                const logEntries = document.getElementById('log-entries');
-                const logEntry = document.createElement('div');
-                logEntry.className = 'log-entry';
-                logEntry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
-                logEntries.appendChild(logEntry);
-                
-                // Keep only last 50 entries
-                while (logEntries.children.length > 50) {
-                    logEntries.removeChild(logEntries.firstChild);
-                }
-                
-                // Scroll to bottom
-                logEntries.scrollTop = logEntries.scrollHeight;
-            }
-        }
-
-        // Initialize game when page loads
-        const game = new MedicalCardGame();
-    </script>
+    <script src="card-data.js"></script>
+    <script src="game-logic.js"></script>
+    <script src="ui-handler.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
